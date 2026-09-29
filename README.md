@@ -45,7 +45,9 @@ on macOS). To include the hardware path, run the bridge against
 well; see [bridge/README.md](bridge/README.md).
 
 Pushing to `main` runs the tests, builds, and publishes to GitHub Pages
-([deploy.yml](.github/workflows/deploy.yml)).
+([deploy.yml](.github/workflows/deploy.yml)). The bridge is a separate Go
+program; pushing a `bridge-v*` tag builds it for every platform and publishes
+a release ([bridge.yml](.github/workflows/bridge.yml)).
 
 ## Layout
 
@@ -58,7 +60,7 @@ sign/index.html          Sign
 src/sign/                its UI and signature appearance (typed, drawn, uploaded)
 src/pdf/                 PDF.js rendering, incremental updates, fields, signing
 src/crypto/              CMS for PAdES; browser key, .p12 file, hardware token
-bridge/                  local PKCS#11 bridge for hardware tokens
+bridge/                  the token bridge: a Go program, released as binaries
 ```
 
 A new tool is a directory with an `index.html` that imports `src/site.js`,

@@ -15,8 +15,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node tools/selftest.mjs",
-    "icons": "node tools/make-icons.mjs",
-    "bridge": "npm --prefix bridge start"
+    "icons": "node tools/make-icons.mjs"
   },
   "dependencies": {
     "@fontsource/dancing-script": "^5.3.0",
