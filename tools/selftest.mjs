@@ -22,7 +22,7 @@ import { signField } from '../src/pdf/sign.js';
 import { fileSigner, tokenCertificates, tokenSigner } from '../src/crypto/signers.js';
 
 const OPENSSL = process.env.OPENSSL ?? 'openssl';
-const dir = mkdtempSync(join(tmpdir(), 'ivxdocs-sign-'));
+const dir = mkdtempSync(join(tmpdir(), 'ivx-docs-'));
 const ssl = (...args) => execFileSync(OPENSSL, args, { cwd: dir, stdio: 'pipe' }).toString();
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
 

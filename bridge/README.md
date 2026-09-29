@@ -1,4 +1,4 @@
-# ivx/docs Sign token bridge
+# ivx/docs Sign — token bridge
 
 Browsers cannot talk to smart cards or USB tokens. This bridge is a small
 local server that can: ivx/docs Sign sends it a SHA-256 digest, and the token
@@ -24,7 +24,7 @@ Common modules:
 | --- | --- | --- |
 | `PKCS11_MODULE` | — | path to the PKCS#11 library (or pass it as the first argument) |
 | `PORT` | `47111` | the address the app points at is `http://127.0.0.1:PORT` |
-| `ORIGINS` | `http://localhost:5173,http://localhost:4173` | comma-separated origins allowed to use the bridge; add the address you serve the app from |
+| `ORIGINS` | `https://docs.ivx.run,http://localhost:5173,http://localhost:4173` | comma-separated origins allowed to use the bridge; add yours if you host the app elsewhere |
 
 ## Security
 

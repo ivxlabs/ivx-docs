@@ -1,0 +1,92 @@
+name: Build and deploy
+
+# Publishes docs.ivx.run. The custom domain lives in the repository's Pages
+# settings (Settings → Pages → Custom domain), not in a CNAME file: a Pages
+# site deployed from Actions ignores one.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Let a run finish rather than cancelling it mid-deploy; queued runs collapse
+# to the newest, so a busy day does not publish a stale commit last.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Places, removes and signs fields in freshly made PDFs, then has
+      # OpenSSL verify every signature against the byte range it claims.
+      # A signing bug must never reach the site.
+      - run: npm test
+
+      - run: npm run build
+
+      # sw.js ships with placeholders that vite.config.js fills in after the
+      # bundle is written. If that ever silently stops, the site would deploy
+      # an offline shell that caches nothing — so fail loudly.
+      - name: Check the service worker was stamped
+        run: |
+          if grep -qE '__PRECACHE_MANIFEST__|__CACHE_VERSION__' dist/sw.js; then
+            echo "::error file=vite.config.js::sw.js still contains build placeholders"
+            exit 1
+          fi
+          count=$(node -e "
+            const sw = require('fs').readFileSync('dist/sw.js', 'utf8');
+            const m = sw.match(/const SHELL = (\[[\s\S]*?\]);/);
+            console.log(m ? JSON.parse(m[1]).length : 0);
+          ")
+          echo "Precaching $count files"
+          [ "$count" -ge 10 ] || { echo "::error::precache manifest looks empty"; exit 1; }
+
+      # Documents never leave the device, and nothing third-party loads at
+      # runtime. A stray CDN URL in the bundle would quietly break that.
+      - name: Check no third-party origin is referenced
+        run: |
+          if grep -rniE 'https?://(cdn[.-]|unpkg\.com|cdnjs\.|jsdelivr\.|fonts\.(googleapis|gstatic)\.com|.*\.cloudfront\.net)' \
+               dist --include='*.js' --include='*.mjs' --include='*.css' --include='*.html'; then
+            echo "::error::the build references a third-party origin"
+            exit 1
+          fi
+          echo "No CDN references found"
+
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+
+      - uses: actions/upload-pages-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

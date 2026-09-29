@@ -30,7 +30,7 @@ const withKey = (key, certificates) => ({
 /* ── device ──────────────────────────────────────────────────────────── */
 
 const store = (mode, act) => new Promise((resolve, reject) => {
-  const open = indexedDB.open('ivxdocs-sign', 1);
+  const open = indexedDB.open('ivx-docs', 1);
   open.onupgradeneeded = () => open.result.createObjectStore('kv');
   open.onerror = () => reject(open.error);
   open.onsuccess = () => {

@@ -1,7 +1,15 @@
-# ivx/docs Sign
+# ivx/docs
 
-Free, open-source PDF signing that runs entirely in your browser. It does two
-things: it places signature fields anywhere in a PDF, and it signs them.
+Free, open-source document tools that run entirely in your browser, at
+[docs.ivx.run](https://docs.ivx.run). There's no server behind them, no
+account and no upload: you open a file, work on it, and save it back. The site
+is a static PWA, so once installed it works offline, and it can open PDFs
+straight from your file manager.
+
+## Sign
+
+[docs.ivx.run/sign](https://docs.ivx.run/sign/) does two things: it places
+signature fields anywhere in a PDF, and it signs them.
 
 Every signature is a real digital signature (PAdES, `ETSI.CAdES.detached`)
 that any PDF reader can verify, and it can carry a visible mark: your name
@@ -16,14 +24,17 @@ Each change is saved as an incremental update, so the original bytes are
 never rewritten. That means several people can sign the same document one
 after another, and each earlier signature stays valid.
 
-Nothing is uploaded. The app is a static PWA: install it and it works offline,
-and, once installed, it can open PDFs straight from your file manager.
+Password-protected PDFs are refused, because they can't be signed without
+decrypting them first. Signatures carry no trusted timestamp and no embedded
+revocation data (PAdES B-B). Signing with the browser key proves integrity,
+not identity: a reader will say the document is unmodified but that the
+signer's identity is unknown, until they choose to trust that certificate.
 
 ## Development
 
 ```sh
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5173 (the hub) and /sign/
 npm run build      # static site in dist/, deployable to any directory of any host
 npm test           # signs sample PDFs and verifies them with OpenSSL 3
 ```
@@ -33,27 +44,26 @@ on macOS). To include the hardware path, run the bridge against
 [SoftHSM](https://github.com/softhsm/SoftHSMv2) and set `PKCS11_MODULE` as
 well; see [bridge/README.md](bridge/README.md).
 
+Pushing to `main` runs the tests, builds, and publishes to GitHub Pages
+([deploy.yml](.github/workflows/deploy.yml)).
+
 ## Layout
 
 ```
-src/pdf/incremental.js   append-only revisions on top of pdf-lib
-src/pdf/fields.js        find, add and remove signature fields; their appearance
-src/pdf/sign.js          byte range, placeholder and the signature itself
-src/crypto/cms.js        CMS SignedData for PAdES
-src/crypto/signers.js    browser key, .p12 file, hardware token
-src/appearance.js        typed, drawn or uploaded signature → PNG
-src/viewer.js            PDF.js rendering
-src/main.js              the UI
+index.html               the hub: one entry per tool
+src/site.js, site.css    what every page shares: type, base styles, offline worker
+public/                  manifest, service worker, icons (tools/make-icons.mjs)
+
+sign/index.html          Sign
+src/sign/                its UI and signature appearance (typed, drawn, uploaded)
+src/pdf/                 PDF.js rendering, incremental updates, fields, signing
+src/crypto/              CMS for PAdES; browser key, .p12 file, hardware token
 bridge/                  local PKCS#11 bridge for hardware tokens
 ```
 
-## Limits
-
-Password-protected PDFs are refused, because they can't be signed without
-decrypting them first. Signatures carry no trusted timestamp and no embedded
-revocation data (PAdES B-B). Signing with the browser key proves integrity,
-not identity: a reader will say the document is unmodified but that the
-signer's identity is unknown, until they choose to trust that certificate.
+A new tool is a directory with an `index.html` that imports `src/site.js`,
+an entry in `build.rollupOptions.input` in `vite.config.js`, and a line on
+the hub.
 
 ## License
 

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later | Copyright (C) 2026 0xcrypto -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Everything executable comes from this origin; documents never leave the
+     page. connect-src reaches past 'self' only for the local token bridge
+     (and Vite's dev websocket). 'wasm-unsafe-eval' lets PDF.js decode JPEG
+     2000 and JBIG2 images; eval() itself stays off. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: http://127.0.0.1:* http://localhost:* ws://localhost:*; worker-src 'self' blob:; form-action 'self'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ivx/docs Sign</title>
+<meta name="description" content="Free, open-source PDF signing in your browser: place signature fields and sign them with a digital signature — from this browser, a certificate file, or a hardware token.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+</head>
+<body>
+
+<header class="bar">
+  <!-- The slash is branding, not punctuation. -->
+  <a class="brand" href="../">
+    <span aria-hidden="true">ivx<span class="slash">/</span>docs</span>
+    <span class="sub" aria-hidden="true">Sign</span>
+    <span class="visually-hidden">ivx docs Sign</span>
+  </a>
+  <span id="fileName" class="file-name"></span>
+  <nav class="tools">
+    <label class="button">Open PDF<input id="open" type="file" accept="application/pdf,.pdf" hidden></label>
+    <button id="place" type="button" aria-pressed="false" disabled>Add signature field</button>
+    <button id="download" type="button" class="primary" disabled>Download</button>
+  </nav>
+</header>
+
+<main id="viewer" class="viewer">
+  <section id="empty" class="empty">
+    <h1>Sign a PDF</h1>
+    <p>Drop a PDF here, or <label class="link">choose one<input id="openEmpty" type="file" accept="application/pdf,.pdf" hidden></label>.</p>
+    <p class="muted">Place signature fields anywhere, then sign them. Every signature is a real
+      digital signature (PAdES), made with a key in this browser, a certificate file,
+      or a smart card or USB token. Your document never leaves this device.</p>
+  </section>
+</main>
+
+<p id="status" class="status" role="status" hidden></p>
+
+<dialog id="sign">
+  <form method="dialog">
+    <h2>Sign <span id="fieldName"></span></h2>
+
+    <fieldset class="tabs">
+      <legend>How it looks</legend>
+      <label><input type="radio" name="look" value="type" checked> Type</label>
+      <label><input type="radio" name="look" value="draw"> Draw</label>
+      <label><input type="radio" name="look" value="image"> Image</label>
+    </fieldset>
+    <div data-look="type">
+      <input name="typed" placeholder="Your name" autocomplete="name">
+      <p class="typed-preview" id="typedPreview" aria-hidden="true"></p>
+    </div>
+    <div data-look="draw">
+      <canvas id="pad" class="pad" aria-label="Draw your signature"></canvas>
+      <button type="button" id="clearPad" class="small">Clear</button>
+    </div>
+    <div data-look="image">
+      <input type="file" name="image" accept="image/*">
+      <img id="imagePreview" class="image-preview" alt="">
+    </div>
+
+    <fieldset class="tabs">
+      <legend>Signed with</legend>
+      <label><input type="radio" name="with" value="device" checked> This browser</label>
+      <label><input type="radio" name="with" value="file"> Certificate file</label>
+      <label><input type="radio" name="with" value="token"> Hardware token</label>
+    </fieldset>
+    <div data-with="device">
+      <input name="name" placeholder="Full name" autocomplete="name">
+      <input name="email" type="email" placeholder="Email (optional)" autocomplete="email">
+      <p class="muted">A signing key is created in this browser and kept there, with a certificate
+        in your name. It proves the document has not changed since you signed it; a certificate
+        from a trusted issuer is what proves who you are.</p>
+    </div>
+    <div data-with="file">
+      <input type="file" name="p12" accept=".p12,.pfx,application/x-pkcs12">
+      <input type="password" name="password" placeholder="Certificate password" autocomplete="off">
+    </div>
+    <div data-with="token">
+      <div class="row">
+        <input name="bridge" value="http://127.0.0.1:47111" aria-label="Bridge address">
+        <button type="button" id="loadToken" class="small">Find certificates</button>
+      </div>
+      <select name="tokenCert" aria-label="Certificate"></select>
+      <input type="password" name="pin" placeholder="Token PIN" autocomplete="off">
+      <p class="muted">Needs the local <a href="https://github.com/ivxlabs/ivx-docs/tree/main/bridge" target="_blank" rel="noopener">token bridge</a>
+        running. Only a hash of the document reaches the token; the key never leaves it.</p>
+    </div>
+
+    <p id="signError" class="error" role="alert"></p>
+    <menu>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button id="doSign" value="sign" class="primary">Sign</button>
+    </menu>
+  </form>
+</dialog>
+
+<footer class="foot">
+  Free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a> ·
+  <a href="https://github.com/ivxlabs/ivx-docs" target="_blank" rel="noopener">Source</a>
+</footer>
+
+<script type="module" src="/src/sign/main.js"></script>
+</body>
+</html>

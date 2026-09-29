@@ -1,5 +1,5 @@
 {
-  "name": "ivxdocs-sign-bridge",
+  "name": "ivx-docs-bridge",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,7 +7,7 @@
   "license": "GPL-3.0-or-later",
   "author": "0xcrypto (https://eval.blog)",
   "bin": {
-    "ivxdocs-sign-bridge": "server.js"
+    "ivx-docs-bridge": "server.js"
   },
   "scripts": {
     "start": "node server.js"

@@ -157,7 +157,7 @@ function render(size, { padding = 0 } = {}) {
   return png(size, size, out);
 }
 
-const svg = () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="ivx/docs Sign">
+const svg = () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="ivx/docs">
   <rect width="100" height="100" rx="22" fill="#0a0a0a"/>
   <g stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
     <!-- ivx -->

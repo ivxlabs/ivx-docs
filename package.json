@@ -1,14 +1,14 @@
 {
-  "name": "ivxdocs-sign",
+  "name": "ivx-docs",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Free, open-source PDF signing in the browser: place signature fields anywhere and sign them with a digital signature, including from smart cards and USB tokens.",
+  "description": "Document tools that run entirely in the browser, with no server. First up: Sign — place signature fields in a PDF and sign them digitally, including with smart cards and USB tokens.",
   "license": "GPL-3.0-or-later",
   "author": "0xcrypto (https://eval.blog)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ivxlabs/ivxdocs-sign.git"
+    "url": "git+https://github.com/ivxlabs/ivx-docs.git"
   },
   "scripts": {
     "dev": "vite",
@@ -29,5 +29,6 @@
   },
   "devDependencies": {
     "vite": "^8.3.1"
-  }
+  },
+  "homepage": "https://docs.ivx.run"
 }

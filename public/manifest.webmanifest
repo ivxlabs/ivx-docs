@@ -1,17 +1,21 @@
 {
-  "name": "ivx/docs Sign — free PDF signing",
-  "short_name": "ivx/docs Sign",
-  "description": "Place signature fields in any PDF and sign them with a digital signature — from this browser, a certificate file, or a hardware token.",
-  "start_url": "./index.html",
+  "name": "ivx/docs — document tools in your browser",
+  "short_name": "ivx/docs",
+  "description": "Free, open-source document tools that run entirely in your browser. No server, no account, no upload.",
+  "id": "./",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
   "categories": ["productivity", "business", "utilities"],
-  "file_handlers": [
-    { "action": "./index.html", "accept": { "application/pdf": [".pdf"] } }
+  "shortcuts": [
+    { "name": "Sign a PDF", "url": "./sign/", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
   ],
-  "launch_handler": { "client_mode": "focus-existing" },
+  "file_handlers": [
+    { "action": "./sign/", "accept": { "application/pdf": [".pdf"] } }
+  ],
+  "launch_handler": { "client_mode": "navigate-existing" },
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },

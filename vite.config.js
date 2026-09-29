@@ -76,6 +76,8 @@ export default defineConfig({
   plugins: [pdfjsAssets(), serviceWorkerPrecache()],
   build: {
     target: 'es2022',
+    // One HTML entry per page: the hub, then a directory per tool.
+    rollupOptions: { input: { hub: 'index.html', sign: 'sign/index.html' } },
     assetsInlineLimit: 0,                              // keep fonts and icons as real, cacheable files
     reportCompressedSize: false,
     chunkSizeWarningLimit: 2048,

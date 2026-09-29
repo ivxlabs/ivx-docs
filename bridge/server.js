@@ -22,7 +22,7 @@ import pkcs11js from 'pkcs11js';
 
 const MODULE = process.env.PKCS11_MODULE ?? process.argv[2];
 const PORT = Number(process.env.PORT ?? 47111);
-const ORIGINS = (process.env.ORIGINS ?? 'http://localhost:5173,http://localhost:4173').split(',').map(o => o.trim());
+const ORIGINS = (process.env.ORIGINS ?? 'https://docs.ivx.run,http://localhost:5173,http://localhost:4173').split(',').map(o => o.trim());
 const HOSTS = [`127.0.0.1:${PORT}`, `localhost:${PORT}`];
 
 if (!MODULE) {

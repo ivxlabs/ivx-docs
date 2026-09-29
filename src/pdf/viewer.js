@@ -8,9 +8,10 @@
 
 import { AnnotationMode, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { ROOT } from '../site.js';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
-const ASSETS = `${import.meta.env.BASE_URL}pdfjs/`;
+const ASSETS = new URL('pdfjs/', ROOT).href;
 
 let current;
 

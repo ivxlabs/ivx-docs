@@ -4,17 +4,16 @@
 /* ivx/docs Sign. The document's bytes are the only state: placing, removing
    and signing a field each append a revision and re-render from the result. */
 
-import '@fontsource/ibm-plex-sans/400.css';
-import '@fontsource/ibm-plex-sans/600.css';
+import '../site.js';
 import '@fontsource/dancing-script/400.css';
-import './style.css';
+import './sign.css';
 
 import { EncryptedPDFError, PDFDocument } from 'pdf-lib';
-import { render, toBox, toRect } from './viewer.js';
-import { update } from './pdf/incremental.js';
-import { addField, removeField, signatureFields } from './pdf/fields.js';
-import { signField } from './pdf/sign.js';
-import { deviceSigner, fileSigner, tokenCertificates, tokenSigner } from './crypto/signers.js';
+import { render, toBox, toRect } from '../pdf/viewer.js';
+import { update } from '../pdf/incremental.js';
+import { addField, removeField, signatureFields } from '../pdf/fields.js';
+import { signField } from '../pdf/sign.js';
+import { deviceSigner, fileSigner, tokenCertificates, tokenSigner } from '../crypto/signers.js';
 import { drawn, pad, typed, uploaded } from './appearance.js';
 
 const $ = id => document.getElementById(id);
@@ -23,7 +22,7 @@ const dialog = $('sign');
 const form = dialog.querySelector('form');
 const f = form.elements;
 
-const SETTINGS = 'ivxdocs-sign';
+const SETTINGS = 'ivx-docs:sign';
 const REMEMBERED = ['look', 'with', 'typed', 'name', 'email', 'bridge'];
 
 let doc = null;                                       // { name, bytes, dirty }
@@ -258,4 +257,3 @@ addEventListener('beforeunload', e => doc?.dirty && e.preventDefault());
 // Installed as an app, PDFs can be opened with it straight from the OS.
 window.launchQueue?.setConsumer(async ({ files }) => files[0] && open(await files[0].getFile()));
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
