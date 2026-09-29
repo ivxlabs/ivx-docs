@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="ivx/docs Sign">
+  <rect width="100" height="100" rx="22" fill="#0a0a0a"/>
+  <g stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- ivx -->
+    <g stroke="#fafafa">
+      <path d="M28.8 28 V44"/>
+      <circle cx="28.8" cy="22.5" r="2.6" fill="#fafafa" stroke="none"/>
+      <path d="M36.8 28 L43.8 44 L50.8 28"/>
+      <path d="M56.8 28 L70.8 44 M70.8 28 L56.8 44"/>
+    </g>
+    <!-- the slash carries the brand, so it is dimmed rather than emphasised -->
+    <path d="M29.8 76 L39.8 56" stroke="#8a8a8a"/>
+    <!-- the signature -->
+    <polyline stroke="#fafafa" stroke-width="4.2" points="45.0,66.0 45.7,64.3 46.4,62.7 47.1,61.3 47.8,60.2 48.5,59.5 49.2,59.1 49.9,59.1 50.6,59.5 51.3,60.3 52.0,61.3 52.7,62.6 53.4,64.0 54.1,65.5 54.8,67.0 55.5,68.4 56.2,69.6 56.9,70.6 57.6,71.3 58.3,71.7 59.0,71.8 59.7,71.6 60.4,71.0 61.1,70.2 61.8,69.2 62.5,68.1 63.2,66.8 63.9,65.6 64.6,64.4 65.3,63.4 66.0,62.5 66.7,61.8 67.4,61.4 68.1,61.3 68.8,61.4 69.5,61.8 70.2,62.4 70.9,63.2 71.6,64.1 72.3,65.0 73.0,66.0"/>
+  </g>
+</svg>

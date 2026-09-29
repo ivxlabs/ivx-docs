@@ -1,0 +1,21 @@
+{
+  "name": "ivx/docs Sign — free PDF signing",
+  "short_name": "ivx/docs Sign",
+  "description": "Place signature fields in any PDF and sign them with a digital signature — from this browser, a certificate file, or a hardware token.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "categories": ["productivity", "business", "utilities"],
+  "file_handlers": [
+    { "action": "./index.html", "accept": { "application/pdf": [".pdf"] } }
+  ],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
