@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later | Copyright (C) 2026 0xcrypto -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: ws://localhost:*; worker-src 'self' blob:; form-action 'self'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ivx/docs Merge PDFs</title>
+<meta name="description" content="Free, open-source PDF merging in your browser: combine PDFs, reorder them and pick pages, without uploading anything.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="../">
+    <span aria-hidden="true">ivx<span class="slash">/</span>docs</span>
+    <span class="sub" aria-hidden="true">Merge PDFs</span>
+    <span class="visually-hidden">ivx docs Merge PDFs</span>
+  </a>
+  <span id="totals" class="file-name"></span>
+  <nav class="tools">
+    <label class="button">Add PDFs<input id="add" type="file" accept="application/pdf,.pdf" multiple hidden></label>
+    <button id="merge" type="button" class="primary" disabled>Merge</button>
+  </nav>
+</header>
+
+<main class="merge">
+  <section id="empty" class="empty">
+    <h1>Merge PDFs</h1>
+    <p>Drop PDFs here, or <label class="link">choose them<input id="addEmpty" type="file" accept="application/pdf,.pdf" multiple hidden></label>.</p>
+    <p class="muted">Put them in order, pick the pages you want from each, and save them as one
+      PDF. Your documents never leave this device.</p>
+  </section>
+
+  <ol id="files" class="files" hidden></ol>
+  <p id="note" class="muted note" hidden>Drag to reorder. Pages take ranges like <code>1-3, 5, 8-</code>;
+    leave it blank for every page. Signatures in the originals don’t carry over: a signature
+    covers its own file’s bytes, so in the merged PDF it would no longer be valid.</p>
+</main>
+
+<p id="status" class="status" role="status" hidden></p>
+
+<footer class="foot">
+  Free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a> ·
+  <a href="https://github.com/ivxlabs/ivx-docs" target="_blank" rel="noopener">Source</a>
+</footer>
+
+<script type="module" src="/src/merge/main.js"></script>
+</body>
+</html>

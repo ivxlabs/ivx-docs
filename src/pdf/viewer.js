@@ -9,22 +9,25 @@
 import { AnnotationMode, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ROOT } from '../site.js';
+import './viewer.css';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 const ASSETS = new URL('pdfjs/', ROOT).href;
 
 let current;
 
+const load = bytes => getDocument({
+  data: bytes.slice(),                                // PDF.js takes ownership of what it is given
+  cMapUrl: `${ASSETS}cmaps/`,
+  standardFontDataUrl: `${ASSETS}standard_fonts/`,
+  wasmUrl: `${ASSETS}wasm/`,
+  iccUrl: `${ASSETS}iccs/`,
+  isEvalSupported: false,
+});
+
 /** Renders `bytes` into `container`; returns [{ layer, viewport }] per page. */
 export async function render(container, bytes) {
-  const task = getDocument({
-    data: bytes.slice(),                              // PDF.js takes ownership of what it is given
-    cMapUrl: `${ASSETS}cmaps/`,
-    standardFontDataUrl: `${ASSETS}standard_fonts/`,
-    wasmUrl: `${ASSETS}wasm/`,
-    iccUrl: `${ASSETS}iccs/`,
-    isEvalSupported: false,
-  });
+  const task = load(bytes);
   const pdf = await task.promise;
 
   const width = Math.min(container.clientWidth - 32, 1000);
@@ -63,6 +66,23 @@ export async function render(container, bytes) {
   current?.destroy();
   current = task;
   return pages;
+}
+
+/** The first page of `bytes` as a canvas `width` CSS pixels wide. */
+export async function thumbnail(bytes, width) {
+  const task = load(bytes);
+  try {
+    const page = await (await task.promise).getPage(1);
+    const viewport = page.getViewport({ scale: width / page.getViewport({ scale: 1 }).width });
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    await page.render({ canvas, viewport, transform: dpr === 1 ? undefined : [dpr, 0, 0, dpr, 0, 0] }).promise;
+    return canvas;
+  } finally {
+    task.destroy();
+  }
 }
 
 /** A PDF rectangle [x1, y1, x2, y2] as CSS box { left, top, width, height }. */

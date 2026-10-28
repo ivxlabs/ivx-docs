@@ -28,6 +28,10 @@ const OID = {
 
 export const sha256 = async data => new Uint8Array(await crypto.subtle.digest('SHA-256', data));
 
+/** The certificate's common name. */
+export const nameOf = cert =>
+  cert.subject.typesAndValues.find(t => t.type === '2.5.4.3')?.value.valueBlock.value ?? 'Unknown signer';
+
 /** 'RSA' or 'EC', from the certificate's public key. */
 export const keyType = cert =>
   cert.subjectPublicKeyInfo.algorithm.algorithmId === OID.rsa ? 'RSA' : 'EC';

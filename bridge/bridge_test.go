@@ -19,7 +19,7 @@ import (
 )
 
 func TestOnlyAllowedOriginsAndHost(t *testing.T) {
-	h := handler(&Bridge{Log: t.Logf}, 47111, []string{"https://docs.ivx.run"})
+	h := handler(&Bridge{Log: t.Logf}, nil, 47111, []string{"https://docs.ivx.run"})
 	cases := []struct {
 		host, origin string
 		want         int

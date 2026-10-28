@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Document tools that run entirely in the browser, with no server. First up: Sign — place signature fields in a PDF and sign them digitally, including with smart cards and USB tokens.",
+  "description": "Document tools that run entirely in the browser, with no server: sign PDFs (including with smart cards and USB tokens), verify their signatures, and merge them.",
   "license": "GPL-3.0-or-later",
   "author": "0xcrypto (https://eval.blog)",
   "repository": {
@@ -14,7 +14,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node tools/selftest.mjs",
+    "test": "node tools/selftest.mjs && node tools/tasks-test.mjs",
+    "test:tasks": "node tools/tasks-test.mjs",
     "icons": "node tools/make-icons.mjs"
   },
   "dependencies": {

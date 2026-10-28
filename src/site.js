@@ -15,3 +15,30 @@ export const ROOT = new URL('.', document.querySelector('link[rel="manifest"]').
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register(new URL('sw.js', ROOT), { scope: ROOT.pathname });
 }
+
+/** Shows `text` in the page's status line; nothing hides it. */
+export function status(text = '', error = false) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.hidden = !text;
+  el.classList.toggle('error', error);
+}
+
+/** Runs `task` with `label` showing, and shows any failure instead. */
+export async function busy(label, task) {
+  status(label);
+  try {
+    await task();
+    status();
+  } catch (err) {
+    console.error(err);
+    status(err.message, true);
+  }
+}
+
+/** Hands `bytes` to the browser as a download called `name`. */
+export function save(bytes, name, type = 'application/pdf') {
+  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  Object.assign(document.createElement('a'), { href: url, download: name }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

@@ -17,16 +17,27 @@ import { PDFDocument, PDFCrossRefStream, PDFNumber } from 'pdf-lib';
 const enc = new TextEncoder();
 
 /** The bytes pdf-lib would write for one object. */
-const serialise = obj => {
+export const serialise = obj => {
   const out = new Uint8Array(obj.sizeInBytes());
   obj.copyBytesInto(out, 0);
   return out;
 };
 
-const same = (a, b) => a && a.length === b.length && a.every((v, i) => v === b[i]);
+export const same = (a, b) => a && a.length === b.length && a.every((v, i) => v === b[i]);
 
 const snapshot = context => new Map(
   context.enumerateIndirectObjects().map(([ref, obj]) => [ref.tag, serialise(obj)]));
+
+/**
+ * Loads `bytes` with pdf-lib, refusing an encrypted file with `refusal`.
+ * (pdf-lib's own EncryptedPDFError is an ES5 class, so `instanceof` never
+ * matches it; asking the document is the reliable test.)
+ */
+export async function load(bytes, refusal = 'Password-protected PDFs cannot be opened here.') {
+  const doc = await PDFDocument.load(bytes, { updateMetadata: false, ignoreEncryption: true });
+  if (doc.isEncrypted) throw new Error(refusal);
+  return doc;
+}
 
 /** Where the last cross-reference section starts, whether it is a stream,
     and the /Size it declares. */
@@ -44,7 +55,7 @@ function lastXref(bytes) {
  * original bytes with those changes appended as a new revision.
  */
 export async function update(bytes, edit) {
-  const doc = await PDFDocument.load(bytes, { updateMetadata: false });
+  const doc = await load(bytes);
   const { context } = doc;
   const prev = lastXref(bytes);
   /* pdf-lib does not register cross-reference streams as objects, so their

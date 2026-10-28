@@ -4,13 +4,12 @@
 /* ivx/docs Sign. The document's bytes are the only state: placing, removing
    and signing a field each append a revision and re-render from the result. */
 
-import '../site.js';
+import { busy, save } from '../site.js';
 import '@fontsource/dancing-script/400.css';
 import './sign.css';
 
-import { EncryptedPDFError, PDFDocument } from 'pdf-lib';
 import { render, toBox, toRect } from '../pdf/viewer.js';
-import { update } from '../pdf/incremental.js';
+import { load, update } from '../pdf/incremental.js';
 import { addField, removeField, signatureFields } from '../pdf/fields.js';
 import { signField } from '../pdf/sign.js';
 import { deviceSigner, fileSigner, tokenCertificates, tokenSigner } from '../crypto/signers.js';
@@ -32,28 +31,10 @@ let tokenCerts = [];
 
 const px = box => Object.fromEntries(Object.entries(box).map(([k, v]) => [k, `${v}px`]));
 
-function status(text = '', error = false) {
-  $('status').textContent = text;
-  $('status').hidden = !text;
-  $('status').classList.toggle('error', error);
-}
-
-/** Runs `task` with `label` showing, and shows any failure instead. */
-async function busy(label, task) {
-  status(label);
-  try {
-    await task();
-    status();
-  } catch (err) {
-    console.error(err);
-    status(err.message, true);
-  }
-}
-
 /* ── document ────────────────────────────────────────────────────────── */
 
 async function show(bytes) {
-  const fields = signatureFields(await PDFDocument.load(bytes, { updateMetadata: false }));
+  const fields = signatureFields(await load(bytes, 'Password-protected PDFs cannot be signed here.'));
   const pages = await render(viewer, bytes);
   pages.forEach(({ layer, viewport }, index) => {
     layer.addEventListener('pointerdown', e => placing && e.target === layer && drag(e, layer, viewport, index));
@@ -74,20 +55,14 @@ async function open(file) {
   if (doc?.dirty && !confirm('Discard the changes to the current document?')) return;
   await busy('Opening…', async () => {
     const bytes = new Uint8Array(await file.arrayBuffer());
-    try {
-      await show(bytes);
-    } catch (err) {
-      throw err instanceof EncryptedPDFError ? new Error('Password-protected PDFs cannot be signed here.') : err;
-    }
+    await show(bytes);
     doc = { name: file.name, bytes, dirty: false };
     $('fileName').textContent = file.name;
   });
 }
 
 function download() {
-  const url = URL.createObjectURL(new Blob([doc.bytes], { type: 'application/pdf' }));
-  Object.assign(document.createElement('a'), { href: url, download: doc.name }).click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  save(doc.bytes, doc.name);
   doc.dirty = false;
 }
 

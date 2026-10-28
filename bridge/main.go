@@ -4,11 +4,12 @@
 /* ivx/docs Sign token bridge.
 
    Browsers cannot talk to smart cards or USB signing tokens, so this small
-   local program does it for them, through the token's PKCS#11 driver. It
-   serves two endpoints and nothing else:
+   local program does it for them, through the token's PKCS#11 driver:
 
+     GET  /health         what this bridge is and what it can do
      GET  /certificates   the certificates on every connected token
      POST /sign           { id, pin, digest } → { signature }
+     /sync/...            sync with other devices on this network; see sync.go
 
    Only a 32-byte SHA-256 digest ever arrives here, the PIN is needed for
    every signature, and the private key never leaves the hardware. It
@@ -42,6 +43,7 @@ func main() {
 		modules = append(modules, s)
 		return nil
 	})
+	noSync := flag.Bool("no-sync", false, "do not let the page sync with other devices on this network")
 	showVersion := flag.Bool("version", false, "print the version, then exit")
 	flag.Parse()
 
@@ -72,7 +74,11 @@ func main() {
 	fmt.Printf("ivx/docs Sign token bridge %s\n", version)
 	fmt.Printf("Listening on http://%s for %s\n", addr, *origins)
 	fmt.Println("Keep this window open while you sign; close it when you are done.")
-	fatal(http.ListenAndServe(addr, handler(b, *port, strings.Split(*origins, ","))))
+	var s *Sync
+	if !*noSync {
+		s = &Sync{Log: log.Printf}
+	}
+	fatal(http.ListenAndServe(addr, handler(b, s, *port, strings.Split(*origins, ","))))
 }
 
 // fatal reports err and exits. On Windows the bridge is usually started by
@@ -86,8 +92,9 @@ func fatal(err error) {
 	os.Exit(1)
 }
 
-// handler serves the two endpoints to the allowed origins, and no one else.
-func handler(b *Bridge, port int, origins []string) http.Handler {
+// handler serves the endpoints to the allowed origins, and no one else. A
+// nil Sync leaves the sync routes out.
+func handler(b *Bridge, s *Sync, port int, origins []string) http.Handler {
 	hosts := []string{fmt.Sprintf("127.0.0.1:%d", port), fmt.Sprintf("localhost:%d", port)}
 	for i := range origins {
 		origins[i] = strings.TrimSpace(origins[i])
@@ -115,6 +122,16 @@ func handler(b *Bridge, port int, origins []string) http.Handler {
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 			w.Header().Set("Access-Control-Allow-Private-Network", "true")
 			w.WriteHeader(http.StatusNoContent)
+
+		case r.Method == http.MethodGet && r.URL.Path == "/health":
+			send(http.StatusOK, map[string]any{"ok": true, "name": "ivx-docs-bridge", "version": version, "sync": s != nil})
+
+		case strings.HasPrefix(r.URL.Path, "/sync/"):
+			if s == nil {
+				send(http.StatusForbidden, errorBody("Sync is turned off on this bridge (-no-sync)."))
+				return
+			}
+			s.serve(w, r)
 
 		case r.Method == http.MethodGet && r.URL.Path == "/certificates":
 			certs, err := b.Certificates()

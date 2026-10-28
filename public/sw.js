@@ -54,3 +54,23 @@ self.addEventListener('fetch', event => {
     .then(res => { if (res.ok && res.type === 'basic') store(request, res); return res; })
     .catch(offline)));
 });
+
+/* Tasks' reminders (src/tasks/notify.js). A click opens Tasks, or brings an
+   open one forward; the Mark done and Snooze buttons go to that page to act
+   on, since the tasks live in its database, not here. */
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const { page, task } = event.notification.data || {};
+  if (!page) return;
+  const act = event.action || 'open';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async list => {
+    const open = list.find(c => c.url.split(/[?#]/)[0] === page);
+    if (open) {
+      open.postMessage({ type: 'ivx-task', task, act });
+      return open.focus();
+    }
+    const url = new URL(page);
+    if (task) url.search = new URLSearchParams({ task, act }).toString();
+    return self.clients.openWindow(url.href);
+  }));
+});

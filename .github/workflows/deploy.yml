@@ -34,8 +34,9 @@ jobs:
       - run: npm ci
 
       # Places, removes and signs fields in freshly made PDFs, then has
-      # OpenSSL verify every signature against the byte range it claims.
-      # A signing bug must never reach the site.
+      # OpenSSL verify every signature against the byte range it claims;
+      # checks the same files with Verify, tampered with and edited after
+      # signing; and merges them. A signing bug must never reach the site.
       - run: npm test
 
       - run: npm run build

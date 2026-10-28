@@ -14,12 +14,9 @@
 import * as asn1js from 'asn1js';
 import * as pkijs from 'pkijs';
 import forge from 'node-forge';
-import { algorithmFor, sha256 } from './cms.js';
+import { algorithmFor, nameOf, sha256 } from './cms.js';
 
 const certFrom = der => pkijs.Certificate.fromBER(der);
-
-export const nameOf = cert =>
-  cert.subject.typesAndValues.find(t => t.type === '2.5.4.3')?.value.valueBlock.value ?? 'Unknown signer';
 
 const withKey = (key, certificates) => ({
   name: nameOf(certificates[0]),

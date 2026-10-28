@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later | Copyright (C) 2026 0xcrypto -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Nothing is fetched to check a signature: no revocation lookups, no
+     trust lists. connect-src stays at 'self' (and Vite's dev websocket). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' data: blob: ws://localhost:*; worker-src 'self' blob:; form-action 'self'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ivx/docs Verify</title>
+<meta name="description" content="Free, open-source PDF signature checking in your browser: see who signed a PDF, when, and whether it has changed since.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+</head>
+<body>
+
+<header class="bar">
+  <a class="brand" href="../">
+    <span aria-hidden="true">ivx<span class="slash">/</span>docs</span>
+    <span class="sub" aria-hidden="true">Verify</span>
+    <span class="visually-hidden">ivx docs Verify</span>
+  </a>
+  <span id="fileName" class="file-name"></span>
+  <nav class="tools">
+    <label class="button">Open PDF<input id="open" type="file" accept="application/pdf,.pdf" hidden></label>
+  </nav>
+</header>
+
+<main id="main" class="verify">
+  <section id="empty" class="empty">
+    <h1>Check a signed PDF</h1>
+    <p>Drop a PDF here, or <label class="link">choose one<input id="openEmpty" type="file" accept="application/pdf,.pdf" hidden></label>.</p>
+    <p class="muted">See every signature in it: who signed, when, whether the document has
+      changed since, and what any later revisions did. Your document never leaves this device.</p>
+  </section>
+  <aside id="report" class="report" aria-live="polite" hidden></aside>
+  <div id="viewer" class="viewer"></div>
+</main>
+
+<p id="status" class="status" role="status" hidden></p>
+
+<footer class="foot">
+  Free software under the <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">GPLv3</a> ·
+  <a href="https://github.com/ivxlabs/ivx-docs" target="_blank" rel="noopener">Source</a>
+</footer>
+
+<script type="module" src="/src/verify/main.js"></script>
+</body>
+</html>

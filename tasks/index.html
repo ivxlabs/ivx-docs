@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later | Copyright (C) 2026 0xcrypto -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://iam.ivx.run https://axmtlkeiqcdzyittpgho.supabase.co https://www.googleapis.com ws://localhost:*; form-action 'self'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ivx/docs Tasks</title>
+<meta name="description" content="Free, open-source to-do lists in your browser: lists, a board, schedules, repeats, time blocks and reminders, synced between your own devices with no server in between.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../icons/icon-192.png">
+</head>
+<body class="tasks-page">
+
+<header class="bar">
+  <button id="menu" type="button" class="narrow-only" aria-controls="side" aria-expanded="false">Lists</button>
+  <a class="brand" href="../">
+    <span aria-hidden="true">ivx<span class="slash">/</span>docs</span>
+    <span class="sub" aria-hidden="true">Tasks</span>
+    <span class="visually-hidden">ivx docs Tasks</span>
+  </a>
+  <span id="syncLine" class="file-name"></span>
+  <nav class="tools">
+    <span class="seg" role="group" aria-label="Show as">
+      <button id="asList" type="button" aria-pressed="true">List</button>
+      <button id="asBoard" type="button" aria-pressed="false">Board</button>
+    </span>
+    <button id="openSettings" type="button">Settings</button>
+  </nav>
+</header>
+
+<div class="tasks-app">
+  <aside id="side" class="side">
+    <nav aria-label="Views">
+      <button type="button" class="nav" data-view="upcoming">Upcoming <span class="count" data-count="upcoming"></span></button>
+      <button type="button" class="nav" data-view="starred">Starred <span class="count" data-count="starred"></span></button>
+      <h2>Lists</h2>
+      <div id="lists"></div>
+      <button id="newList" type="button" class="nav add-list">+ New list</button>
+      <hr>
+      <button type="button" class="nav" data-view="archive">Archive</button>
+      <button type="button" class="nav" data-view="trash">Trash</button>
+    </nav>
+  </aside>
+
+  <main class="view">
+    <div class="view-head">
+      <h1 id="title"></h1>
+      <div id="viewTools" class="view-tools"></div>
+    </div>
+    <form id="add" class="add" autocomplete="off">
+      <input id="addTitle" placeholder="Add a task" aria-label="New task">
+      <button type="submit" class="primary">Add</button>
+    </form>
+    <p id="viewNote" class="muted view-note" hidden></p>
+    <div id="items"></div>
+  </main>
+</div>
+
+<dialog id="editor" class="sheet" aria-labelledby="editorTitle">
+  <form id="editForm" method="dialog">
+    <h2 id="editorTitle" class="visually-hidden">Task</h2>
+    <input name="title" class="big" placeholder="Title" aria-label="Title" required>
+    <textarea name="notes" rows="3" placeholder="Notes" aria-label="Notes"></textarea>
+    <div class="grid2">
+      <label>List <select name="listId"></select></label>
+      <label>Status
+        <select name="status">
+          <option value="todo">To do</option>
+          <option value="doing">In progress</option>
+          <option value="done">Done</option>
+        </select>
+      </label>
+    </div>
+    <div class="grid3">
+      <label>Date <input name="date" type="date"></label>
+      <label>Starts <input name="start" type="time"></label>
+      <label>Ends <input name="end" type="time"></label>
+    </div>
+    <p class="muted hint">A start time is when it is due and when you are reminded. Add an end time to block out the time it takes.</p>
+    <label>Repeats
+      <select name="repeat">
+        <option value="">Doesn't repeat</option>
+        <option value="daily">Every day</option>
+        <option value="weekdays">Every weekday</option>
+        <option value="weekly">Every week</option>
+        <option value="monthly">Every month</option>
+        <option value="yearly">Every year</option>
+        <option value="custom">Custom…</option>
+      </select>
+    </label>
+    <fieldset id="custom" class="custom" hidden>
+      <legend class="visually-hidden">Custom repeat</legend>
+      <div class="row">
+        Every <input name="every" type="number" min="1" max="999" value="1" class="num">
+        <select name="unit">
+          <option value="day">days</option>
+          <option value="week">weeks</option>
+          <option value="month">months</option>
+          <option value="year">years</option>
+        </select>
+      </div>
+      <div id="weekdays" class="row weekdays"></div>
+      <div class="row">
+        Ends
+        <select name="ends">
+          <option value="never">never</option>
+          <option value="on">on</option>
+          <option value="after">after</option>
+        </select>
+        <input name="endsOn" type="date" hidden>
+        <span id="endsAfter" hidden><input name="endsAfter" type="number" min="1" max="999" value="10" class="num"> times</span>
+      </div>
+    </fieldset>
+    <label class="check"><input name="starred" type="checkbox"> Starred</label>
+    <p id="editError" class="error-text" hidden></p>
+    <div class="actions">
+      <button id="editDelete" type="button">Delete</button>
+      <button id="editArchive" type="button">Archive</button>
+      <span class="grow"></span>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button id="editSave" value="save" class="primary">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="settings" class="sheet wide" aria-labelledby="settingsTitle">
+  <div class="sheet-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button id="closeSettings" type="button">Close</button>
+  </div>
+  <div id="settingsBody"></div>
+</dialog>
+
+<p id="status" class="status" role="status" hidden></p>
+
+<script type="module" src="/src/tasks/main.js"></script>
+</body>
+</html>
