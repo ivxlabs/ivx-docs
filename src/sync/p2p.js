@@ -26,8 +26,15 @@
    Once open, each side asks the other for everything changed since it last
    synced with that device ("after rev N") and merges it with whatever the
    app's store decides; while both pages stay open, every change is offered
-   to the other side as it happens. Closing either page ends it, and the
-   next sync starts with a new code.
+   to the other side as it happens. A short drop, a Wi-Fi blip, is ridden
+   out: the connection comes back by itself if the network does, with the
+   same addresses. Anything longer, or closing either page, ends it, and the
+   next sync starts with a new code. It cannot reconnect by itself later:
+   what a code describes (a random port, a random .local name) exists only
+   for that one connection, and browsers cannot listen on a fixed one, so
+   without a server the person carrying the codes is the only way the two
+   can find each other again. What is kept is who they have synced with and
+   when, so the app can offer to.
 
    The app hands over its store through configure(); see there. */
 
@@ -35,6 +42,7 @@ const VERSION = 1;
 const PREFIX = 'IVX1';
 const KV_DEVICE = 'p2p.device';
 const KV_CURSORS = 'p2p.cursors';
+const KV_KNOWN = 'p2p.known';
 /** How long a code waits for its answer. */
 const CODE_LIFETIME = 10 * 60_000;
 /** How long the channel may take to open once both codes are in. */
@@ -55,6 +63,7 @@ let hooks = {};
 const state = { device: null, sessions: [] };
 const listeners = new Set();
 let cursors = {};
+let known = {};   // device id -> { name, lastSync }: everyone this device has synced with
 let nextId = 1;
 
 /**
@@ -84,6 +93,7 @@ export async function init(h = {}) {
   }
   store.setDevice(state.device.id);
   cursors = await kv.get(KV_CURSORS, {});
+  known = await kv.get(KV_KNOWN, {});
 
   // A closed tab does not close its channel; the other side would only
   // notice when it timed out. Saying so makes it notice at once.
@@ -125,7 +135,11 @@ function emit() {
 }
 
 /**
- * Every session: { id, role: 'host'|'join', stage, peerName, code, error, lastSync }.
+ * `known`: the devices this one has synced with, most recent first, each
+ * { id, name, lastSync, connected }.
+ *
+ * Every session: { id, role: 'host'|'join', stage, peerName, code, error, lastSync, shaky }.
+ * `shaky` while the connection has dropped and may yet come back.
  *   host:  'making' → 'waiting' (show code) → 'connecting' → 'open'
  *   join:  'making' → 'replying' (show reply) → 'open'
  * and 'closed' or 'failed' at the end.
@@ -136,9 +150,26 @@ export function status() {
     device: state.device,
     sessions: state.sessions.map(s => ({
       id: s.id, role: s.role, stage: s.stage, peerName: s.peer?.name || s.peerName || '',
-      code: s.code, error: s.error, lastSync: s.lastSync, syncing: s.pulling,
+      code: s.code, error: s.error, lastSync: s.lastSync, syncing: s.pulling, shaky: s.shaky,
     })),
+    known: Object.entries(known)
+      .map(([id, d]) => ({ id, ...d, connected: state.sessions.some(x => x.open && x.peer?.id === id) }))
+      .sort((a, b) => b.lastSync - a.lastSync),
   };
+}
+
+/** Forget a device: it is no longer offered for syncing. What it sent stays. */
+export async function forget(id) {
+  delete known[id];
+  delete cursors[id];
+  await kv.set(KV_KNOWN, known);
+  await kv.set(KV_CURSORS, cursors);
+  emit();
+}
+
+async function remember(peer, lastSync) {
+  known[peer.id] = { name: peer.name, lastSync: lastSync || known[peer.id]?.lastSync || 0 };
+  await kv.set(KV_KNOWN, known);
 }
 
 /* ── codes ─────────────────────────────────────────────────── */
@@ -240,11 +271,20 @@ const gathered = pc => new Promise(resolve => {
 function newSession(role, peerName = '') {
   // No ICE servers: local addresses only, so it can only ever connect on this network.
   const pc = new RTCPeerConnection({ iceServers: [] });
-  const s = { id: nextId++, role, pc, dc: null, stage: 'making', peerName, peer: null, code: '', error: '', lastSync: 0, open: false, pulling: false, again: false, frags: new Map() };
+  const s = { id: nextId++, role, pc, dc: null, stage: 'making', peerName, peer: null, code: '', error: '', lastSync: 0, open: false, shaky: false, pulling: false, again: false, frags: new Map() };
   state.sessions.push(s);
   pc.addEventListener('connectionstatechange', () => {
-    if (pc.connectionState === 'failed') fail(s, 'Could not reach the other device. Both need to be on the same Wi-Fi, and some networks keep their devices apart.');
-    if (pc.connectionState === 'closed') end(s);
+    const now = pc.connectionState;
+    // Dropped, but ICE keeps checking: if the network comes back with the
+    // same addresses, so does the connection, and it catches up.
+    if (now === 'disconnected' && s.open) { s.shaky = true; emit(); }
+    if (now === 'connected' && s.shaky) { s.shaky = false; if (s.peer) pull(s); emit(); }
+    if (now === 'failed') {
+      fail(s, s.open
+        ? `Lost the connection to ${s.peer?.name || 'the other device'}. Reconnect when you are both on the same Wi-Fi again.`
+        : 'Could not reach the other device. Both need to be on the same Wi-Fi, and some networks keep their devices apart.');
+    }
+    if (now === 'closed') end(s);
   });
   s.expiry = setTimeout(() => {
     if (!s.open && !['failed', 'closed'].includes(s.stage)) fail(s, 'The code was not used in time. Start again.');
@@ -272,9 +312,13 @@ function end(s) {
   emit();
 }
 
-/** Start a sync from this device: returns the session, whose code the other device needs. */
-export async function host() {
-  const s = newSession('host');
+/**
+ * Start a sync from this device: returns the session, whose code the other
+ * device needs. `forName` labels it while waiting, when it is meant for a
+ * device synced with before.
+ */
+export async function host(forName = '') {
+  const s = newSession('host', forName);
   try {
     wire(s, s.pc.createDataChannel('ivx-sync', { ordered: true }));
     await s.pc.setLocalDescription(await s.pc.createOffer());
@@ -388,6 +432,7 @@ async function receive(s, msg) {
   if (msg.t === 'hello') {
     if (msg.app !== app || typeof msg.device?.id !== 'string') return end(s);
     s.peer = { id: msg.device.id.slice(0, 80), name: String(msg.device.name || 'Another device').slice(0, 64) };
+    await remember(s.peer);
     emit();
     return pull(s);
   }
@@ -415,6 +460,7 @@ async function receive(s, msg) {
       if (msg.more) return;
       s.pulling = false;
       s.lastSync = Date.now();
+      await remember(s.peer, s.lastSync);
       emit();
       if (s.again) { s.again = false; pull(s); }
       return;

@@ -10,7 +10,7 @@
 import * as store from './store.js';
 import * as p2p from '../sync/p2p.js';
 
-export { supported, subscribe, status, rename, host, take, close, linkFor, readCode } from '../sync/p2p.js';
+export { supported, subscribe, status, rename, host, take, close, forget, linkFor, readCode } from '../sync/p2p.js';
 
 function deviceName() {
   const ua = navigator.userAgent;

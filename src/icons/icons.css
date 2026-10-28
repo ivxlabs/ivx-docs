@@ -58,6 +58,11 @@
 .icon-repeat::before { content: '\e3f6'; }
 .icon-calendar-blank::before { content: '\e10a'; }
 .icon-clock::before { content: '\e19a'; }
+.icon-arrows-clockwise::before { content: '\e094'; }
+.icon-devices::before { content: '\eba4'; }
+.icon-wifi-slash::before { content: '\e4f2'; }
+.icon-palette::before { content: '\e6c8'; }
+.icon-circle-half::before { content: '\e18c'; }
 .icon-folder-open::before { content: '\e256'; }
 .icon-arrows-merge::before { content: '\ed3e'; }
 .icon-signature::before { content: '\ebac'; }

@@ -274,3 +274,7 @@ textarea { font: inherit; color: inherit; border: 1px solid var(--line); border-
   .grid3 { grid-template-columns: 1fr 1fr; }
   .grid3 label:first-child { grid-column: 1 / -1; }
 }
+
+.sync-nudge { font-weight: 400; color: var(--muted); }
+.sync-nudge:hover { color: var(--fg); }
+.devices li > .icon { color: var(--muted); }

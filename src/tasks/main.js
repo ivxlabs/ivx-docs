@@ -24,7 +24,7 @@ import * as backup from './backup.js';
 import { qrElement, scan } from '../sync/qr.js';
 import {
   DAY, DEFAULT_CLEANUP, WEEKDAYS, byOrder, byTime, complete, daysBetween, describeRepeat,
-  isArchived, isLive, isOpen, isTrashed, parseDate, range, sweep, today, upcoming, weekday,
+  isArchived, isLive, isOpen, isTrashed, parseDate, range, series, sweep, today, upcoming, weekday,
 } from './model.js';
 
 const $ = id => document.getElementById(id);
@@ -132,6 +132,7 @@ const ago = ms => {
   if (s < 90) return 'just now';
   if (s < 5400) return `${Math.round(s / 60)} minutes ago`;
   if (s < 129600) return `${Math.round(s / 3600)} hours ago`;
+  if (s < 30 * 86400) return `${Math.round(s / 86400) || 1} day${Math.round(s / 86400) > 1 ? 's' : ''} ago`;
   return new Date(ms).toLocaleDateString();
 };
 
@@ -529,6 +530,30 @@ function showCustom() {
 
 for (const name of ['repeat', 'unit', 'ends']) field(name).addEventListener('change', showCustom);
 
+/* A repeating task's date and times are this occurrence's. Changing them
+   moves this one only, and the editor says so, offering to move the series
+   with it; changing the rule itself starts the series again from here. */
+let ruleTouched = false;
+
+function showMove() {
+  const task = editing;
+  const repeating = task?.repeat && field('repeat').value && !ruleTouched;
+  const s = repeating ? series(task) : null;
+  const moved = s && (field('date').value !== s.slot || field('start').value !== s.start || field('end').value !== s.end);
+  $('repeatNote').hidden = !moved;
+  $('moveAllRow').hidden = !moved;
+  if (moved) {
+    $('repeatNote').textContent = `This one is moved from ${dayLabel(s.slot)}${s.start ? ` at ${time(s.start)}` : ''}. `
+      + 'The repeats stay on their own schedule.';
+  } else {
+    field('moveAll').checked = false;
+  }
+}
+
+for (const name of ['date', 'start', 'end']) field(name).addEventListener('input', showMove);
+$('custom').addEventListener('change', () => { ruleTouched = true; showMove(); });
+field('repeat').addEventListener('change', () => { ruleTouched = true; showMove(); });
+
 function openEditor(task) {
   editing = task;
   form.reset();
@@ -551,6 +576,8 @@ function openEditor(task) {
   field('endsOn').value = rule?.ends?.on || '';
   field('endsAfter').value = rule?.ends?.after || 10;
   showCustom();
+  ruleTouched = false;
+  showMove();
   const live = isLive(task);
   $('editDelete').lastElementChild.textContent = task.trashedAt ? 'Delete forever' : 'Delete';
   const restoring = Boolean(task.archivedAt || task.trashedAt);
@@ -596,14 +623,27 @@ form.addEventListener('submit', async e => {
   if (end && !start) return fail('A time block needs a start as well as an end.');
   if (start && end && end <= start) return fail('A time block has to end after it starts.');
   if ((start || field('repeat').value) && !date) date = today();
+  // The series: kept as it was when only this one moved, or started again
+  // from this one when the rule changed or the person asked to move it all.
+  let repeat = null;
+  let slot = '';
+  if (date && field('repeat').value) {
+    if (editing.repeat && !ruleTouched && !field('moveAll').checked) {
+      const s = series(editing);
+      repeat = { ...editing.repeat, start: s.start, end: s.end };
+      slot = s.slot;
+    } else {
+      repeat = { ...ruleFromForm(date), start, end };
+      slot = date;
+    }
+  }
   const patch = {
     id: editing.id,
     title: field('title').value.trim(),
     notes: field('notes').value,
     listId: field('listId').value,
     starred: field('starred').checked,
-    date, start, end,
-    repeat: date ? ruleFromForm(date) : null,
+    date, start, end, repeat, slot,
   };
   // A new time is a new reminder; an old snooze no longer applies.
   if (date !== editing.date || start !== editing.start) patch.snooze = 0;
@@ -696,6 +736,20 @@ function syncSection() {
     button('Use a code', () => openScanner(), { icon: 'scan' }),
     h('span', { class: 'muted' }, 'Start on either device; the other uses its code.')));
   for (const x of s.sessions) out.push(sessionPanel(x));
+
+  // Everyone synced with before: a way back to them, since there is no server to find them by.
+  const idle = s.known.filter(d => !d.connected && !s.sessions.some(x => x.peerName === d.name && !['failed', 'closed'].includes(x.stage)));
+  if (s.known.length) {
+    out.push(h('h4', null, 'Your devices'), h('ul', { class: 'devices' }, s.known.map(d => h('li', null,
+      icon('devices'),
+      h('span', { class: 'grow' }, h('strong', null, d.name), ' ',
+        h('span', { class: 'muted' }, d.connected ? 'connected now' : d.lastSync ? `last synced ${ago(d.lastSync)}` : 'not synced yet')),
+      idle.includes(d) ? button('Reconnect', () => attempt(() => sync.host(d.name)), { class: 'small', icon: 'arrows-clockwise', disabled: busy }) : null,
+      d.connected ? null : button(`Forget ${d.name}`, () => {
+        if (confirm(`Forget ${d.name}? Tasks it sent stay here; it just stops being offered for syncing.`)) attempt(() => sync.forget(d.id));
+      }, { class: 'small', icon: 'x', iconOnly: true })))),
+    note('To sync again, open Tasks on both and choose Reconnect here: devices cannot find each other without a server, so it takes the codes once more.'));
+  }
   return section('Sync', out);
 }
 
@@ -729,8 +783,9 @@ function sessionPanel(x) {
       break;
     case 'connecting': body = [h('p', null, `Connecting to ${name}…`), row(cancel)]; break;
     case 'open':
-      body = [row(h('span', { class: 'grow' }, h('strong', null, name), ' ',
-        h('span', { class: 'muted' }, x.syncing || !x.lastSync ? 'syncing…' : `in sync, ${ago(x.lastSync)}`)),
+      body = [row(h('span', { class: 'grow' }, x.shaky ? icon('wifi-slash') : null, h('strong', null, name), ' ',
+        h('span', { class: 'muted' }, x.shaky ? 'connection dropped, waiting for it to come back…'
+          : x.syncing || !x.lastSync ? 'syncing…' : `in sync, ${ago(x.lastSync)}`)),
       button('Disconnect', () => sync.close(x.id), { class: 'small', icon: 'link-break' }))];
       break;
     case 'failed': body = [h('p', { class: 'error-text' }, x.error), row(button('Dismiss', () => sync.close(x.id), { class: 'small' }))]; break;
@@ -886,11 +941,23 @@ async function autoBackup() {
 
 /* ── the rest of the page ──────────────────────────────────── */
 
+/* The header's word on sync: how it is going while connected, and
+   otherwise a nudge back to the device last synced with, which the person
+   can take or leave. */
 function syncLine() {
-  const open = sync.status().sessions.filter(x => x.stage === 'open');
-  $('syncLine').textContent = !open.length ? ''
-    : open.some(x => x.syncing) ? 'Syncing…'
-      : `In sync with ${open.length === 1 ? open[0].peerName : `${open.length} devices`}`;
+  const s = sync.status();
+  const open = s.sessions.filter(x => x.stage === 'open');
+  const last = s.known[0];
+  let content = '';
+  if (open.length) {
+    content = open.some(x => x.shaky) ? 'Connection dropped, waiting…'
+      : open.some(x => x.syncing) ? 'Syncing…'
+        : `In sync with ${open.length === 1 ? open[0].peerName : `${open.length} devices`}`;
+  } else if (last && !s.sessions.some(x => !['failed', 'closed'].includes(x.stage))) {
+    content = button(`${last.lastSync ? `Last synced with ${last.name}, ${ago(last.lastSync)}` : `Sync with ${last.name}`}`,
+      () => openSettings('sync'), { class: 'link-button sync-nudge', icon: 'arrows-clockwise' });
+  }
+  $('syncLine').replaceChildren(content);
 }
 
 $('add').addEventListener('submit', e => {
@@ -1005,6 +1072,7 @@ async function boot() {
   let hour = 0;
   setInterval(() => {
     if (day !== today()) { day = today(); render(); }
+    syncLine();
     if (++hour >= 60) { hour = 0; tidy(); autoBackup(); }
   }, 60_000);
   autoBackup();

@@ -10,7 +10,7 @@
 
 import assert from 'node:assert/strict';
 import {
-  DAY, at, complete, describeRepeat, nextDate, range, reminders, sweep, upcoming, weekStart,
+  DAY, at, complete, describeRepeat, nextDate, range, reminders, series, sweep, upcoming, weekStart,
 } from '../src/tasks/model.js';
 
 let passed = 0;
@@ -62,6 +62,40 @@ test('completing a repeating task adds the next one and lets go of the rule', ()
   assert.equal(next.repeat.n, 2);
   assert.equal(next.status, 'todo');
   assert.equal(complete(task({ date: '2026-10-30' }), 1, 'x').next, null);
+});
+
+test('moving one occurrence leaves the series where it was', () => {
+  // Monthly on the 28th, at 10:00; this month's moved to the 29th at 14:00.
+  const moved = task({
+    title: 'rent', date: '2026-10-29', start: '14:00', slot: '2026-10-28',
+    repeat: { every: 1, unit: 'month', day: 28, start: '10:00', end: '' },
+  });
+  const { next } = complete(moved, 1, 'n');
+  assert.equal(next.date, '2026-11-28');
+  assert.equal(next.slot, '2026-11-28');
+  assert.equal(next.start, '10:00');
+  assert.deepEqual(series(next), { slot: '2026-11-28', start: '10:00', end: '' });
+});
+
+test('moving a daily one forward does not put two on one day', () => {
+  const moved = task({ date: '2026-10-29', slot: '2026-10-28', repeat: { every: 1, unit: 'day' } });
+  assert.equal(complete(moved, 1, 'n').next.date, '2026-10-30');
+  const early = task({ date: '2026-10-27', slot: '2026-10-28', repeat: { every: 1, unit: 'day' } });
+  assert.equal(complete(early, 1, 'n').next.date, '2026-10-29');
+});
+
+test('a task from before slots keeps working', () => {
+  const old = task({ date: '2026-10-28', start: '09:00', repeat: { every: 1, unit: 'week', days: [3] } });
+  const { next } = complete(old, 1, 'n');
+  assert.equal(next.date, '2026-11-04');
+  assert.equal(next.start, '09:00');
+  assert.equal(next.slot, '2026-11-04');
+});
+
+test('a count still counts the occurrences skipped over', () => {
+  const t = task({ date: '2026-10-30', slot: '2026-10-28', repeat: { every: 1, unit: 'day', ends: { after: 3 }, n: 1 } });
+  // Slots 29 (n 2) and 30 (n 3) are passed; the 31st would be a fourth.
+  assert.equal(complete(t, 1, 'n').next, null);
 });
 
 test('describing a rule', () => {

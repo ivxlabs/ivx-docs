@@ -19,7 +19,9 @@ const ICONS = [
   'list-checks', 'archive', 'trash', 'pencil-simple', 'x', 'check', 'arrow-counter-clockwise',
   'qr-code', 'scan', 'copy', 'link-break', 'cloud-arrow-up', 'cloud-arrow-down',
   'download-simple', 'upload-simple', 'sign-in', 'sign-out', 'bell', 'broom', 'caret-right',
-  'caret-down', 'repeat', 'calendar-blank', 'clock',
+  'caret-down', 'repeat', 'calendar-blank', 'clock', 'arrows-clockwise', 'devices', 'wifi-slash',
+  // Every page
+  'palette', 'circle-half',
   // Sign, Verify, Merge
   'folder-open', 'arrows-merge', 'signature', 'eraser', 'magnifying-glass', 'arrow-up', 'arrow-down',
   'file-magnifying-glass',

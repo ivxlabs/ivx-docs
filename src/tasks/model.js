@@ -14,8 +14,17 @@
      start     'HH:MM' or ''; when it is due, or when its time block starts
      end       'HH:MM' or ''; when its time block ends (needs a start)
      repeat    null, or { every, unit: 'day'|'week'|'month'|'year',
-                 days: [0-6] for weeks, ends: { after?: n, on?: date },
-                 n: which occurrence this is }
+                 days: [0-6] for weeks, day: 1-31 for months and years,
+                 ends: { after?: n, on?: date }, n: which occurrence this is,
+                 start, end: the series' own times }
+     slot      for a repeating task, the date in the repeat schedule this
+               occurrence stands for
+
+   A repeating task is one occurrence of a series. Its date, start and end
+   are this occurrence's, and moving it moves only this one: its slot, and
+   the rule's own times, stay where the series has them, and the next
+   occurrence is worked out from those. A task from before there were slots
+   has its date as its slot and its times as the series'.
      snooze    epoch ms; remind again then instead
      order     its place in its list, smallest first
      completedAt, archivedAt, trashedAt   epoch ms, or 0
@@ -102,23 +111,58 @@ export function nextDate(rule, date, firstDay = 1) {
   return next;
 }
 
+/** Where a repeating task's series stands: its slot and its own times. */
+export function series(task) {
+  const rule = task.repeat;
+  return {
+    slot: task.slot || task.date,
+    start: rule?.start ?? task.start ?? '',
+    end: rule?.end ?? task.end ?? '',
+  };
+}
+
+/**
+ * The occurrence of `task`'s series after this one: the first date in the
+ * schedule after both its slot and the day it was moved to, so moving one
+ * forward never leaves two on the same day. Null when the rule has run out.
+ */
+export function nextOccurrence(task, firstDay = 1) {
+  const rule = task.repeat;
+  if (!rule) return null;
+  let { slot } = series(task);
+  if (!slot) return null;
+  const floor = task.date > slot ? task.date : slot;
+  let n = rule.n || 1;
+  for (let guard = 0; guard < 1000; guard++) {
+    const next = nextDate({ ...rule, n }, slot, firstDay);
+    if (!next) return null;
+    n++;
+    slot = next;
+    if (next > floor) return { date: next, n };
+  }
+  return null;
+}
+
 /**
  * Completing `task`: the changes to it, and the next occurrence to add when
- * it repeats. The done one lets go of its rule, so ticking it off and on
- * again cannot spawn a second next one.
+ * it repeats, at the series' own date and times. The done one lets go of
+ * its rule, so ticking it off and on again cannot spawn a second next one.
  */
 export function complete(task, now, newId, firstDay = 1) {
   const done = { status: 'done', completedAt: now, snooze: 0 };
-  const date = task.repeat && nextDate(task.repeat, task.date, firstDay);
-  if (!date) return { done, next: null };
+  const next = nextOccurrence(task, firstDay);
+  if (!next) return { done, next: null };
+  const { start, end } = series(task);
   return {
     done: { ...done, repeat: null },
     next: {
       ...task,
       id: newId,
       status: 'todo',
-      date,
-      repeat: { ...task.repeat, n: (task.repeat.n || 1) + 1 },
+      date: next.date,
+      slot: next.date,
+      start, end,
+      repeat: { ...task.repeat, n: next.n, start, end },
       completedAt: 0, archivedAt: 0, trashedAt: 0, snooze: 0,
     },
   };

@@ -9,6 +9,7 @@
 <title>ivx/docs Tasks</title>
 <meta name="description" content="Free, open-source to-do lists in your browser: lists, a board, schedules, repeats, time blocks and reminders, synced between your own devices with no server in between.">
 <meta name="theme-color" content="#0a0a0a">
+<script src="../theme.js"></script>
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../icons/icon-192.png">
@@ -115,6 +116,8 @@
         <span id="endsAfter" hidden><input name="endsAfter" type="number" min="1" max="999" value="10" class="num"> times</span>
       </div>
     </fieldset>
+    <p id="repeatNote" class="muted hint" hidden></p>
+    <label id="moveAllRow" class="check" hidden><input name="moveAll" type="checkbox"> Move the repeats too, from this one on</label>
     <label class="check"><input name="starred" type="checkbox"> Starred</label>
     <p id="editError" class="error-text" hidden></p>
     <div class="actions">

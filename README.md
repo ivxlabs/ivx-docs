@@ -63,7 +63,9 @@ shown as a list or as a board, with To do, In progress and Done columns that
 tasks are dragged between. A task can be given a day, a start time, and an end
 time that blocks out the time it takes, and it can repeat: every few days,
 weeks (on chosen weekdays), months or years, until a date or for a number of
-times. Completing a repeating one sets up the next.
+times. Completing a repeating one sets up the next. Moving one occurrence,
+this month's to tomorrow say, moves only that one: the next comes round on
+the usual day and time, unless you choose to move the repeats as well.
 
 Upcoming gathers the dated tasks from every list for a span you choose (today,
 this week, this month, the next 30 days, or your own dates), grouped by day
@@ -86,7 +88,11 @@ as a QR code (also a link, so a phone's camera opens it), the other scans it
 and shows a reply that the first scans back, and the two connect directly
 and encrypted. No STUN or TURN server is involved, so they can only reach
 each other on the same network, and while both stay open every change goes
-across as it is made. For a backup beyond
+across as it is made; a brief drop in the Wi-Fi is ridden out. Devices cannot
+find each other again by themselves later, since without a server nothing can
+tell them where the other now is, so Tasks remembers which devices it has
+synced with and when, says so in its header, and reconnecting is one click and
+a scan. For a backup beyond
 your devices, it can save everything to a file, or, if you sign in with an
 ivx account and connect Google there, to your own Google Drive: the backup
 goes from the browser to Google directly, optionally encrypted with a
