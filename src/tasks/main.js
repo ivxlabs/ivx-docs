@@ -21,6 +21,7 @@ import * as store from './store.js';
 import * as sync from './sync.js';
 import * as notify from './notify.js';
 import * as backup from './backup.js';
+import { qrElement, scan } from '../sync/qr.js';
 import {
   DAY, DEFAULT_CLEANUP, WEEKDAYS, byOrder, byTime, complete, daysBetween, describeRepeat,
   isArchived, isLive, isOpen, isTrashed, parseDate, range, sweep, today, upcoming, weekday,
@@ -68,7 +69,20 @@ function h(tag, props, ...kids) {
   return el;
 }
 
-const button = (label, onclick, props = {}) => h('button', { type: 'button', onclick, ...props }, label);
+/** An icon from src/icons (Phosphor), for beside a label; `fill` for its filled form. */
+const icon = (name, fill = false) => h('i', { class: `icon icon-${name}${fill ? ' fill' : ''}`, 'aria-hidden': 'true' });
+
+/**
+ * A button: `label`, with `props.icon` beside it. With `props.iconOnly` the
+ * label is its accessible name and tooltip instead of its text.
+ */
+function button(label, onclick, { icon: name, iconOnly, class: cls = '', ...props } = {}) {
+  return h('button', {
+    type: 'button', onclick, ...props,
+    class: `${cls}${iconOnly ? ' icon-only' : ''}`.trim() || null,
+    ...(iconOnly ? { 'aria-label': label, title: label } : {}),
+  }, name ? icon(name) : null, iconOnly ? null : label);
+}
 
 const flash = text => {
   status(text);
@@ -242,8 +256,8 @@ let dragging = null;   // the task being dragged
 function taskRow(task, { showList = false, reorder = false } = {}) {
   const overdue = isOpen(task) && task.date && task.date < today();
   const meta = [
-    task.date && h('span', { class: overdue ? 'late' : '' }, when(task)),
-    task.repeat && h('span', { title: describeRepeat(task.repeat) }, `↻ ${describeRepeat(task.repeat)}`),
+    task.date && h('span', { class: overdue ? 'late' : '' }, icon(task.start ? 'clock' : 'calendar-blank'), when(task)),
+    task.repeat && h('span', { title: describeRepeat(task.repeat) }, icon('repeat'), describeRepeat(task.repeat)),
     showList && h('span', null, listName(task.listId)),
     task.status === 'doing' && h('span', { class: 'badge' }, 'In progress'),
   ].filter(Boolean);
@@ -260,7 +274,7 @@ function taskRow(task, { showList = false, reorder = false } = {}) {
       type: 'button', class: 'tick', 'aria-pressed': String(task.status === 'done'),
       'aria-label': task.status === 'done' ? `Mark "${task.title}" not done` : `Mark "${task.title}" done`,
       onclick: () => attempt(() => setDone(task, task.status !== 'done')),
-    })
+    }, icon('check'))
     : h('span', { class: 'tick-space' }),
   h('button', { type: 'button', class: 'body', onclick: () => openEditor(task) },
     h('span', { class: 'title' }, task.title || 'Untitled task'),
@@ -271,13 +285,13 @@ function taskRow(task, { showList = false, reorder = false } = {}) {
       type: 'button', class: 'star', 'aria-pressed': String(Boolean(task.starred)),
       'aria-label': task.starred ? 'Unstar' : 'Star',
       onclick: () => attempt(() => store.put({ id: task.id, starred: !task.starred })),
-    }, task.starred ? '★' : '☆')
+    }, icon('star', Boolean(task.starred)))
     : null,
   !live ? h('span', { class: 'row-actions' },
-    button('Restore', () => attempt(() => restore(task)), { class: 'small' }),
+    button('Restore', () => attempt(() => restore(task)), { class: 'small', icon: 'arrow-counter-clockwise' }),
     isTrashed(task)
-      ? button('Delete forever', () => attempt(() => store.remove(task.id)), { class: 'small' })
-      : button('Delete', () => attempt(() => toTrash(task)), { class: 'small' })) : null);
+      ? button('Delete forever', () => attempt(() => store.remove(task.id)), { class: 'small', icon: 'trash' })
+      : button('Delete', () => attempt(() => toTrash(task)), { class: 'small', icon: 'trash' })) : null);
 
   if (reorder) {
     row.addEventListener('dragover', e => {
@@ -323,7 +337,7 @@ function renderNav() {
     const el = h('button', {
       type: 'button', class: 'nav', 'aria-current': String(ui.view.type === 'list' && ui.view.id === list.id),
       onclick: () => go({ type: 'list', id: list.id }),
-    }, h('span', { class: 'name' }, list.name), h('span', { class: 'count' }, open || ''));
+    }, icon('list-checks'), h('span', { class: 'name' }, list.name), h('span', { class: 'count' }, open || ''));
     // Drop a task on a list to move it there.
     el.addEventListener('dragover', e => { if (dragging && dragging.listId !== list.id) { e.preventDefault(); el.classList.add('drop'); } });
     el.addEventListener('dragleave', () => el.classList.remove('drop'));
@@ -374,7 +388,7 @@ function renderHead() {
       tools.push(button('Empty trash', () => {
         const ids = tasks().filter(isTrashed).map(t => t.id);
         if (ids.length && confirm(`Delete ${ids.length} task${ids.length === 1 ? '' : 's'} for good, on every synced device?`)) attempt(() => store.remove(...ids));
-      }));
+      }, { icon: 'broom' }));
       break;
     default:
       title = list?.name ?? '';
@@ -382,7 +396,7 @@ function renderHead() {
         tools.push(button('Rename', () => {
           const name = prompt('Rename list', list.name)?.trim();
           if (name) attempt(() => store.put({ id: list.id, name }));
-        }), button('Delete list', () => deleteList(list)));
+        }, { icon: 'pencil-simple' }), button('Delete list', () => deleteList(list), { icon: 'trash' }));
       }
   }
   $('title').textContent = title;
@@ -419,9 +433,9 @@ function renderList() {
     if (done.length) {
       const rules = cleanup();
       out.push(h('div', { class: 'done-head' },
-        button(`${ui.showDone ? '▾' : '▸'} Completed (${done.length})`, () => { ui.showDone = !ui.showDone; saveUi(); render(); }, { class: 'link-button' }),
+        button(`Completed (${done.length})`, () => { ui.showDone = !ui.showDone; saveUi(); render(); }, { class: 'link-button', icon: ui.showDone ? 'caret-down' : 'caret-right', 'aria-expanded': String(ui.showDone) }),
         rules.archive ? h('span', { class: 'muted' }, `archived after ${rules.archive} days`) : null,
-        ui.showDone ? button('Archive all', () => attempt(() => store.put(...done.map(t => ({ id: t.id, archivedAt: Date.now() })))), { class: 'small' }) : null));
+        ui.showDone ? button('Archive all', () => attempt(() => store.put(...done.map(t => ({ id: t.id, archivedAt: Date.now() })))), { class: 'small', icon: 'archive' }) : null));
       if (ui.showDone) out.push(h('div', { class: 'rows' }, done.map(t => taskRow(t))));
     }
   } else {
@@ -538,8 +552,10 @@ function openEditor(task) {
   field('endsAfter').value = rule?.ends?.after || 10;
   showCustom();
   const live = isLive(task);
-  $('editDelete').textContent = task.trashedAt ? 'Delete forever' : 'Delete';
-  $('editArchive').textContent = task.archivedAt || task.trashedAt ? 'Restore' : 'Archive';
+  $('editDelete').lastElementChild.textContent = task.trashedAt ? 'Delete forever' : 'Delete';
+  const restoring = Boolean(task.archivedAt || task.trashedAt);
+  $('editArchive').lastElementChild.textContent = restoring ? 'Restore' : 'Archive';
+  $('editArchive').firstElementChild.className = `icon icon-${restoring ? 'arrow-counter-clockwise' : 'archive'}`;
   $('editArchive').hidden = live && task.status !== 'done';
   $('editError').hidden = true;
   $('editor').showModal();
@@ -635,7 +651,7 @@ function notifySection() {
   return section('Reminders',
     perm === 'unsupported' ? note('This browser cannot show notifications.')
       : perm === 'denied' ? note('Notifications are blocked for this site. Allow them in the browser’s site settings to get reminders.')
-        : perm === 'default' ? row(button('Allow notifications', () => notify.ask().then(renderSettings), { class: 'primary' }),
+        : perm === 'default' ? row(button('Allow notifications', () => notify.ask().then(renderSettings), { class: 'primary', icon: 'bell' }),
           h('span', { class: 'muted' }, 'so Tasks can remind you'))
           : note('Notifications are on for this browser.'),
     row(h('label', null, 'Remind me ',
@@ -668,72 +684,106 @@ function cleanupSection() {
 
 function syncSection() {
   const s = sync.status();
-  const p = s.pairing;
-  const out = [];
-  out.push(note('Keep Tasks in step with your other browsers on the same Wi-Fi: directly between them and encrypted, with nothing on the internet. Each device needs the ivx/docs bridge running.'));
-
-  const address = h('input', { value: sync.bridgeUrl(), 'aria-label': 'Bridge address', class: 'grow' });
-  out.push(row(h('label', { class: 'grow' }, 'Bridge ', address),
-    button('Look again', async () => { await sync.setBridgeUrl(address.value); await sync.setEnabled(s.enabled); renderSettings(); })));
-
-  if (!s.available) {
-    out.push(note(s.error || 'The bridge is not running on this device.'),
-      h('p', { class: 'muted' }, 'Get it from the ',
-        h('a', { href: 'https://github.com/ivxlabs/ivx-docs/releases/latest', target: '_blank', rel: 'noopener' }, 'latest release'),
-        ', run it, and leave it open while you sync. The browser may ask whether this site may reach devices on your network: allow it.'));
-  }
-
-  out.push(row(h('label', { class: 'check' },
-    h('input', { type: 'checkbox', checked: s.enabled, onchange: e => attempt(() => sync.setEnabled(e.target.checked)) }),
-    ' Sync with my other devices')));
-
-  if (s.enabled && s.device) {
+  const out = [note('Keep Tasks the same on your phone, your laptop or another browser: directly between them over the same Wi-Fi, with no server and nothing on the internet. Both devices need Tasks open while they sync, and changes go across as you make them until one is closed.')];
+  if (!s.supported) return section('Sync', out, note('This browser cannot connect to other devices directly.'));
+  if (s.device) {
     out.push(row(h('label', { class: 'grow' }, 'This device is called ',
       h('input', { value: s.device.name, onchange: e => attempt(() => sync.rename(e.target.value)) }))));
   }
-  if (s.enabled && s.error && s.available) out.push(h('p', { class: 'error-text' }, s.error));
-  if (s.waiting) out.push(note('Sync is running in another Tasks tab of this browser.'));
-
-  if (p) out.push(pairingPanel(p));
-
-  if (s.peers.length) {
-    out.push(h('h4', null, 'Paired devices'), h('ul', { class: 'devices' }, s.peers.map(peer => h('li', null,
-      h('span', { class: 'grow' }, h('strong', null, peer.name), ' ',
-        h('span', { class: 'muted' }, peer.syncing ? 'syncing…' : peer.online
-          ? `nearby${peer.lastSync ? `, synced ${ago(peer.lastSync)}` : ''}`
-          : `not nearby${peer.lastSync ? `, last synced ${ago(peer.lastSync)}` : ''}`)),
-      peer.online ? button('Sync now', () => sync.syncNow(), { class: 'small' }) : null,
-      button('Unpair', () => { if (confirm(`Stop syncing with ${peer.name}? Tasks already on it stay there.`)) attempt(() => sync.unpair(peer.id)); }, { class: 'small' })))));
-  }
-  if (s.running) {
-    out.push(h('h4', null, 'Nearby'), s.nearby.length
-      ? h('ul', { class: 'devices' }, s.nearby.map(n => h('li', null, h('span', { class: 'grow' }, n.name),
-        button('Pair', () => attempt(() => sync.pair(n.id)), { class: 'small', disabled: Boolean(p && !['done', 'failed'].includes(p.stage)) }))))
-      : note('Looking for other devices with Tasks and sync turned on…'));
-  }
+  const busy = s.sessions.some(x => x.role === 'host' && ['making', 'waiting', 'connecting'].includes(x.stage));
+  out.push(row(
+    button('Show a code', () => attempt(sync.host), { class: 'primary', disabled: busy, icon: 'qr-code' }),
+    button('Use a code', () => openScanner(), { icon: 'scan' }),
+    h('span', { class: 'muted' }, 'Start on either device; the other uses its code.')));
+  for (const x of s.sessions) out.push(sessionPanel(x));
   return section('Sync', out);
 }
 
-function pairingPanel(p) {
-  const close = button('Close', () => sync.dismissPairing(), { class: 'small' });
-  const cancel = button('Cancel', () => sync.dismissPairing(), { class: 'small' });
+function sessionPanel(x) {
+  const name = x.peerName || 'the other device';
+  const cancel = button('Cancel', () => sync.close(x.id), { class: 'small', icon: 'x' });
+  const copy = (text, label) => button(label, () => attempt(async () => {
+    await navigator.clipboard.writeText(text);
+    flash('Copied');
+  }), { class: 'small', icon: 'copy' });
   let body;
-  switch (p.stage) {
-    case 'asking': body = [`Waiting for ${p.peerName} to accept…`, cancel]; break;
-    case 'asked': body = [`${p.peerName} wants to sync tasks with this device.`,
-      button('Accept', () => sync.acceptPair(), { class: 'primary small' }), button('Decline', () => sync.declinePair(), { class: 'small' })]; break;
-    case 'keying': body = ['Agreeing on a key…', cancel]; break;
-    case 'confirm':
-      body = p.confirmed ? [`Waiting for ${p.peerName} to confirm…`, cancel] : [
-        h('span', null, `Does ${p.peerName} show this code?`), h('strong', { class: 'code' }, p.code),
-        button('It matches', () => sync.confirmCode(true), { class: 'primary small' }),
-        button('It doesn’t', () => sync.confirmCode(false), { class: 'small' })];
+  switch (x.stage) {
+    case 'making': body = [h('p', null, 'Preparing a code…')]; break;
+    case 'waiting': {
+      const link = sync.linkFor(x.code);
+      body = [
+        h('p', null, h('strong', null, '1. '), 'On the other device, scan this with the camera, or open Tasks there and choose ', h('em', null, 'Use a code'), '.'),
+        qrElement(link),
+        row(copy(link, 'Copy link')),
+        h('p', null, h('strong', null, '2. '), 'It shows a reply code. Scan that here.'),
+        row(button('Scan the reply', () => openScanner(), { class: 'primary small', icon: 'scan' }), cancel),
+      ];
       break;
-    case 'done': body = [`Paired with ${p.peerName}.`, close]; break;
-    default: body = [p.reason || 'Pairing stopped.', close];
+    }
+    case 'replying':
+      body = [
+        h('p', null, `Now scan this on ${name}, with `, h('em', null, 'Scan the reply'), ':'),
+        qrElement(x.code),
+        row(copy(x.code, 'Copy code'), cancel),
+      ];
+      break;
+    case 'connecting': body = [h('p', null, `Connecting to ${name}…`), row(cancel)]; break;
+    case 'open':
+      body = [row(h('span', { class: 'grow' }, h('strong', null, name), ' ',
+        h('span', { class: 'muted' }, x.syncing || !x.lastSync ? 'syncing…' : `in sync, ${ago(x.lastSync)}`)),
+      button('Disconnect', () => sync.close(x.id), { class: 'small', icon: 'link-break' }))];
+      break;
+    case 'failed': body = [h('p', { class: 'error-text' }, x.error), row(button('Dismiss', () => sync.close(x.id), { class: 'small' }))]; break;
+    default:
+      body = [row(h('span', { class: 'grow' }, `Disconnected from ${name}.`, x.lastSync ? ` Last synced ${ago(x.lastSync)}.` : ''),
+        button('Dismiss', () => sync.close(x.id), { class: 'small' }))];
   }
   return h('div', { class: 'pairing' }, body);
 }
+
+/* The camera, to read a code off the other device's screen, or a box to
+   paste it into where there is no camera. */
+let scanning = null;
+
+async function openScanner() {
+  const dialog = $('scanner');
+  $('scanError').hidden = true;
+  $('scanPaste').value = '';
+  dialog.showModal();
+  scanning?.abort();
+  scanning = new AbortController();
+  const { signal } = scanning;
+  try {
+    const text = await scan($('scanVideo'), signal);
+    if (text) await useCode(text);
+  } catch (err) {
+    if (signal.aborted) return;
+    $('scanVideo').hidden = true;
+    $('scanError').textContent = err.name === 'NotAllowedError' || err.name === 'NotFoundError'
+      ? 'No camera to use here. Paste the code instead.'
+      : err.message;
+    $('scanError').hidden = false;
+  }
+}
+
+async function useCode(text) {
+  try {
+    const code = sync.readCode(text);
+    scanning?.abort();
+    $('scanner').close();
+    await sync.take(text);
+    openSettings('sync');
+    if (code.kind === 'offer') flash(`Show the reply to ${code.name}`);
+  } catch (err) {
+    $('scanError').textContent = err.message;
+    $('scanError').hidden = false;
+    if (!$('scanner').open) status(err.message, true);
+  }
+}
+
+$('scanUse').addEventListener('click', () => useCode($('scanPaste').value));
+$('scanner').addEventListener('close', () => { scanning?.abort(); $('scanVideo').hidden = false; });
+$('scanCancel').addEventListener('click', () => $('scanner').close());
 
 function backupSection() {
   const out = [];
@@ -750,10 +800,10 @@ function backupSection() {
     const me = backup.account();
     if (!me) {
       out.push(note('Back up to your own Google Drive. Sign in with your ivx account, connect Google there once, and Tasks sends its backups straight to your Drive. ivx never sees or keeps them.'),
-        row(button('Sign in with ivx', () => attempt(backup.signIn), { class: 'primary' })));
+        row(button('Sign in with ivx', () => attempt(backup.signIn), { class: 'primary', icon: 'sign-in' })));
     } else {
       out.push(row(h('span', { class: 'grow' }, 'Signed in as ', h('strong', null, me.email || 'your ivx account')),
-        button('Sign out', () => attempt(async () => { await backup.signOut(); renderSettings(); }), { class: 'small' })));
+        button('Sign out', () => attempt(async () => { await backup.signOut(); renderSettings(); }), { class: 'small', icon: 'sign-out' })));
       const drive = h('p', { class: 'muted' }, 'Checking Google Drive…');
       out.push(drive);
       backup.googleStatus().then(g => {
@@ -771,11 +821,11 @@ function backupSection() {
         keep({ last: await backup.backUp(phrase.value) });
         flash('Backed up to Google Drive');
         renderSettings();
-      }), { class: 'primary' }),
+      }), { class: 'primary', icon: 'cloud-arrow-up' }),
       button('Restore from Drive', () => attempt(async () => {
         const n = await backup.restore(phrase.value);
         flash(n ? `Restored ${n} change${n === 1 ? '' : 's'}` : 'Nothing to restore: Tasks already has all of it');
-      }))),
+      }), { icon: 'cloud-arrow-down' })),
       saved.last ? note(`Last backup ${ago(saved.last)}.${saved.error ? ` The last automatic one failed: ${saved.error}` : ''}`) : null);
     }
   }
@@ -786,8 +836,8 @@ function backupSection() {
       const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
       h('a', { href: url, download: `ivx-tasks-${today()}.json` }).click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    })),
-    h('label', { class: 'button' }, 'Restore from a file',
+    }), { icon: 'download-simple' }),
+    h('label', { class: 'button' }, icon('upload-simple'), 'Restore from a file',
       h('input', {
         type: 'file', accept: 'application/json,.json', hidden: true,
         onchange: e => attempt(async () => {
@@ -837,12 +887,10 @@ async function autoBackup() {
 /* ── the rest of the page ──────────────────────────────────── */
 
 function syncLine() {
-  const s = sync.status();
-  const near = s.peers.filter(p => p.online).length;
-  $('syncLine').textContent = !s.running ? ''
-    : s.peers.some(p => p.syncing) ? 'Syncing…'
-      : near ? `In sync with ${near} device${near === 1 ? '' : 's'}`
-        : s.peers.length ? 'No paired device nearby' : '';
+  const open = sync.status().sessions.filter(x => x.stage === 'open');
+  $('syncLine').textContent = !open.length ? ''
+    : open.some(x => x.syncing) ? 'Syncing…'
+      : `In sync with ${open.length === 1 ? open[0].peerName : `${open.length} devices`}`;
 }
 
 $('add').addEventListener('submit', e => {
@@ -936,11 +984,21 @@ async function boot() {
     syncLine();
     if ($('settings').open) renderSettings();
   });
-  await sync.init({
-    onApplied: () => render(),
-    onPairRequest: () => openSettings('sync'),
-  });
+  await sync.init({ onApplied: () => render() });
   syncLine();
+
+  // Opened from another device's sync code (a phone's camera app follows the link here).
+  const shared = location.hash.match(/^#sync=(.+)$/)?.[1];
+  if (shared) {
+    history.replaceState(null, '', location.pathname + location.search);
+    await attempt(async () => {
+      const { name } = sync.readCode(shared);
+      if (confirm(`Sync Tasks with ${name}? Both keep everything either of them has.`)) {
+        await sync.take(shared);
+        openSettings('sync');
+      }
+    });
+  }
 
   // Each minute: a new day changes what Upcoming shows; each hour, tidy up and back up.
   let day = today();

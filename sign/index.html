@@ -28,9 +28,9 @@
   </a>
   <span id="fileName" class="file-name"></span>
   <nav class="tools">
-    <label class="button">Open PDF<input id="open" type="file" accept="application/pdf,.pdf" hidden></label>
-    <button id="place" type="button" aria-pressed="false" disabled>Add signature field</button>
-    <button id="download" type="button" class="primary" disabled>Download</button>
+    <label class="button"><i class="icon icon-folder-open" aria-hidden="true"></i>Open PDF<input id="open" type="file" accept="application/pdf,.pdf" hidden></label>
+    <button id="place" type="button" aria-pressed="false" disabled><i class="icon icon-plus" aria-hidden="true"></i>Add signature field</button>
+    <button id="download" type="button" class="primary" disabled><i class="icon icon-download-simple" aria-hidden="true"></i>Download</button>
   </nav>
 </header>
 
@@ -62,7 +62,7 @@
     </div>
     <div data-look="draw">
       <canvas id="pad" class="pad" aria-label="Draw your signature"></canvas>
-      <button type="button" id="clearPad" class="small">Clear</button>
+      <button type="button" id="clearPad" class="small"><i class="icon icon-eraser" aria-hidden="true"></i>Clear</button>
     </div>
     <div data-look="image">
       <input type="file" name="image" accept="image/*">
@@ -89,7 +89,7 @@
     <div data-with="token">
       <div class="row">
         <input name="bridge" value="http://127.0.0.1:47111" aria-label="Bridge address">
-        <button type="button" id="loadToken" class="small">Find certificates</button>
+        <button type="button" id="loadToken" class="small"><i class="icon icon-magnifying-glass" aria-hidden="true"></i>Find certificates</button>
       </div>
       <select name="tokenCert" aria-label="Certificate"></select>
       <input type="password" name="pin" placeholder="Token PIN" autocomplete="off">
@@ -101,7 +101,7 @@
     <p id="signError" class="error" role="alert"></p>
     <menu>
       <button value="cancel" formnovalidate>Cancel</button>
-      <button id="doSign" value="sign" class="primary">Sign</button>
+      <button id="doSign" value="sign" class="primary"><i class="icon icon-signature" aria-hidden="true"></i>Sign</button>
     </menu>
   </form>
 </dialog>

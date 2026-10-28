@@ -6,6 +6,7 @@
 
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/600.css';
+import './icons/icons.css';
 import './site.css';
 
 /** The site root, found from the manifest link every page carries, so it is

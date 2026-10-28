@@ -25,9 +25,12 @@ const el = (tag, props = {}, ...children) => {
 
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-function button(text, label, onclick, disabled = false) {
-  const b = el('button', { type: 'button', className: 'small', textContent: text, onclick, disabled });
+/** A small button that is only an icon, named by `label`. */
+function button(icon, label, onclick, disabled = false) {
+  const b = el('button', { type: 'button', className: 'small icon-only', title: label, onclick, disabled },
+    el('i', { className: `icon icon-${icon}` }));
   b.setAttribute('aria-label', label);
+  b.firstChild.setAttribute('aria-hidden', 'true');
   return b;
 }
 
@@ -50,9 +53,9 @@ function item(file, i) {
       el('span', { className: 'muted', textContent: plural(file.count, 'page') }),
       el('label', { className: 'pages' }, 'Pages ', pages)),
     el('div', { className: 'order' },
-      button('↑', `Move ${file.name} up`, () => move(i, i - 1), i === 0),
-      button('↓', `Move ${file.name} down`, () => move(i, i + 1), i === files.length - 1),
-      button('×', `Remove ${file.name}`, () => { files.splice(i, 1); draw(); })));
+      button('arrow-up', `Move ${file.name} up`, () => move(i, i - 1), i === 0),
+      button('arrow-down', `Move ${file.name} down`, () => move(i, i + 1), i === files.length - 1),
+      button('x', `Remove ${file.name}`, () => { files.splice(i, 1); draw(); })));
 
   li.addEventListener('dragstart', e => {
     if (e.target.closest('input')) return e.preventDefault();

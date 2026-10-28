@@ -108,9 +108,8 @@ function card(sig, index) {
     certificateDetails(sig.certificates),
     sig.later && sig.end && el('button', {
       type: 'button', className: 'small',
-      textContent: 'Download the version that was signed',
       onclick: () => save(doc.bytes.slice(0, sig.end), `${doc.name.replace(/\.pdf$/i, '')} (as signed by ${signer}).pdf`),
-    }));
+    }, el('i', { className: 'icon icon-download-simple', ariaHidden: 'true' }), 'Download the version that was signed'));
 
   if (sig.page !== null) {
     article.classList.add('placed');

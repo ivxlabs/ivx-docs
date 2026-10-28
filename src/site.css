@@ -52,7 +52,17 @@ button, .button, input, select {
   padding: 0.4rem 0.8rem;
 }
 
-button, .button { cursor: pointer; white-space: nowrap; }
+button, .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* A button that is only an icon carries its name as aria-label and title. */
+button.icon-only { justify-content: center; padding: 0.3rem; min-width: 2rem; }
+button.small.icon-only { padding: 0.15rem; min-width: 1.7rem; }
 button:disabled { opacity: 0.45; cursor: default; }
 button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 button[aria-pressed='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }

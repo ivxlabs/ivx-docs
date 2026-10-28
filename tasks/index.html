@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://127.0.0.1:* http://localhost:* https://iam.ivx.run https://axmtlkeiqcdzyittpgho.supabase.co https://www.googleapis.com ws://localhost:*; form-action 'self'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://iam.ivx.run https://axmtlkeiqcdzyittpgho.supabase.co https://www.googleapis.com ws://localhost:*; form-action 'self'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <title>ivx/docs Tasks</title>
 <meta name="description" content="Free, open-source to-do lists in your browser: lists, a board, schedules, repeats, time blocks and reminders, synced between your own devices with no server in between.">
@@ -16,7 +16,7 @@
 <body class="tasks-page">
 
 <header class="bar">
-  <button id="menu" type="button" class="narrow-only" aria-controls="side" aria-expanded="false">Lists</button>
+  <button id="menu" type="button" class="narrow-only" aria-controls="side" aria-expanded="false"><i class="icon icon-sidebar-simple" aria-hidden="true"></i>Lists</button>
   <a class="brand" href="../">
     <span aria-hidden="true">ivx<span class="slash">/</span>docs</span>
     <span class="sub" aria-hidden="true">Tasks</span>
@@ -25,24 +25,24 @@
   <span id="syncLine" class="file-name"></span>
   <nav class="tools">
     <span class="seg" role="group" aria-label="Show as">
-      <button id="asList" type="button" aria-pressed="true">List</button>
-      <button id="asBoard" type="button" aria-pressed="false">Board</button>
+      <button id="asList" type="button" aria-pressed="true" title="List" aria-label="List"><i class="icon icon-list-bullets" aria-hidden="true"></i><span class="label">List</span></button>
+      <button id="asBoard" type="button" aria-pressed="false" title="Board" aria-label="Board"><i class="icon icon-kanban" aria-hidden="true"></i><span class="label">Board</span></button>
     </span>
-    <button id="openSettings" type="button">Settings</button>
+    <button id="openSettings" type="button" title="Settings" aria-label="Settings"><i class="icon icon-gear-six" aria-hidden="true"></i><span class="label">Settings</span></button>
   </nav>
 </header>
 
 <div class="tasks-app">
   <aside id="side" class="side">
     <nav aria-label="Views">
-      <button type="button" class="nav" data-view="upcoming">Upcoming <span class="count" data-count="upcoming"></span></button>
-      <button type="button" class="nav" data-view="starred">Starred <span class="count" data-count="starred"></span></button>
+      <button type="button" class="nav" data-view="upcoming"><i class="icon icon-calendar-dots" aria-hidden="true"></i>Upcoming <span class="count" data-count="upcoming"></span></button>
+      <button type="button" class="nav" data-view="starred"><i class="icon icon-star" aria-hidden="true"></i>Starred <span class="count" data-count="starred"></span></button>
       <h2>Lists</h2>
       <div id="lists"></div>
-      <button id="newList" type="button" class="nav add-list">+ New list</button>
+      <button id="newList" type="button" class="nav add-list"><i class="icon icon-plus" aria-hidden="true"></i>New list</button>
       <hr>
-      <button type="button" class="nav" data-view="archive">Archive</button>
-      <button type="button" class="nav" data-view="trash">Trash</button>
+      <button type="button" class="nav" data-view="archive"><i class="icon icon-archive" aria-hidden="true"></i>Archive</button>
+      <button type="button" class="nav" data-view="trash"><i class="icon icon-trash" aria-hidden="true"></i>Trash</button>
     </nav>
   </aside>
 
@@ -53,7 +53,7 @@
     </div>
     <form id="add" class="add" autocomplete="off">
       <input id="addTitle" placeholder="Add a task" aria-label="New task">
-      <button type="submit" class="primary">Add</button>
+      <button type="submit" class="primary"><i class="icon icon-plus" aria-hidden="true"></i>Add</button>
     </form>
     <p id="viewNote" class="muted view-note" hidden></p>
     <div id="items"></div>
@@ -118,11 +118,11 @@
     <label class="check"><input name="starred" type="checkbox"> Starred</label>
     <p id="editError" class="error-text" hidden></p>
     <div class="actions">
-      <button id="editDelete" type="button">Delete</button>
-      <button id="editArchive" type="button">Archive</button>
+      <button id="editDelete" type="button"><i class="icon icon-trash" aria-hidden="true"></i><span>Delete</span></button>
+      <button id="editArchive" type="button"><i class="icon icon-archive" aria-hidden="true"></i><span>Archive</span></button>
       <span class="grow"></span>
       <button value="cancel" formnovalidate>Cancel</button>
-      <button id="editSave" value="save" class="primary">Save</button>
+      <button id="editSave" value="save" class="primary"><i class="icon icon-check" aria-hidden="true"></i>Save</button>
     </div>
   </form>
 </dialog>
@@ -130,9 +130,22 @@
 <dialog id="settings" class="sheet wide" aria-labelledby="settingsTitle">
   <div class="sheet-head">
     <h2 id="settingsTitle">Settings</h2>
-    <button id="closeSettings" type="button">Close</button>
+    <button id="closeSettings" type="button"><i class="icon icon-x" aria-hidden="true"></i>Close</button>
   </div>
   <div id="settingsBody"></div>
+</dialog>
+
+<dialog id="scanner" class="sheet" aria-labelledby="scannerTitle">
+  <h2 id="scannerTitle" class="scanner-title">Use a code from the other device</h2>
+  <video id="scanVideo" class="scan-video" playsinline muted></video>
+  <p class="muted">Hold the other device's code up to the camera, or paste it here.</p>
+  <textarea id="scanPaste" rows="3" placeholder="Paste a code or link" aria-label="Sync code"></textarea>
+  <p id="scanError" class="error-text" hidden></p>
+  <div class="actions">
+    <span class="grow"></span>
+    <button id="scanCancel" type="button">Cancel</button>
+    <button id="scanUse" type="button" class="primary"><i class="icon icon-check" aria-hidden="true"></i>Use it</button>
+  </div>
 </dialog>
 
 <p id="status" class="status" role="status" hidden></p>

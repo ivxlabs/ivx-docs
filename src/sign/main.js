@@ -68,8 +68,15 @@ function download() {
 
 /* ── fields ──────────────────────────────────────────────────────────── */
 
-function button(text, label, onclick) {
-  const el = Object.assign(document.createElement('button'), { type: 'button', textContent: text, onclick });
+/** A button with an icon, and `text` beside it unless it is only the icon. */
+function button(icon, text, label, onclick) {
+  const el = Object.assign(document.createElement('button'), { type: 'button', onclick, title: label });
+  const i = document.createElement('i');
+  i.className = `icon icon-${icon}`;
+  i.setAttribute('aria-hidden', 'true');
+  el.append(i);
+  if (text) el.append(text);
+  else el.classList.add('icon-only');
   el.setAttribute('aria-label', label);
   return el;
 }
@@ -82,8 +89,8 @@ function fieldElement(field, viewport) {
     el.title = `Signed by ${field.signedBy}`;
   } else {
     el.append(
-      button('Sign', `Sign ${field.name}`, () => openSign(field.name)),
-      button('×', `Remove ${field.name}`, () => change(d => removeField(d, field.name))));
+      button('signature', 'Sign', `Sign ${field.name}`, () => openSign(field.name)),
+      button('x', '', `Remove ${field.name}`, () => change(d => removeField(d, field.name))));
   }
   return el;
 }

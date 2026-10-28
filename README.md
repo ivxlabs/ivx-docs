@@ -80,9 +80,13 @@ tasks with a day but no time. They come while Tasks is open, in a tab or
 installed as an app, since browsers give a closed page no way to wake itself;
 ones missed while it was closed show when it next opens.
 
-Tasks syncs between your own browsers on the same Wi-Fi through the
-[bridge](bridge/), directly and encrypted after you pair two devices by
-comparing a six-digit code, with nothing on the internet. For a backup beyond
+Tasks syncs between your own browsers on the same Wi-Fi, browser to browser
+over WebRTC, with no server and nothing to install. One device shows a code
+as a QR code (also a link, so a phone's camera opens it), the other scans it
+and shows a reply that the first scans back, and the two connect directly
+and encrypted. No STUN or TURN server is involved, so they can only reach
+each other on the same network, and while both stay open every change goes
+across as it is made. For a backup beyond
 your devices, it can save everything to a file, or, if you sign in with an
 ivx account and connect Google there, to your own Google Drive: the backup
 goes from the browser to Google directly, optionally encrypted with a
